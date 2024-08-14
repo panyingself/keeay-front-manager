@@ -31,14 +31,14 @@
                 <button id="list-header-search" class="btn btn-success" style="position: absolute; right: 8%"
                     @click="searchData">
                     搜索
-                </button>   
+                </button>
                 <!-- 重置按钮 -->
                 <button id="list-header-reset" class="btn btn-warning" style="position: absolute; right: 5.5%"
                     @click="resetData">
                     重置
                 </button>
                 <!-- 新增按钮 -->
-                <button @click="showAddModal" class="btn btn-info" style="position: absolute; right: 3%">
+                <button @click="doAddRootShowDrawer" class="btn btn-info" style="position: absolute; right: 3%">
                     <i class="bi bi-plus"></i> 新增
                 </button>
             </div>
@@ -59,80 +59,186 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <recursive-item v-for="item in items" :key="item.id" :item="item" :columns="list_view_columns"
-                            :level="0" @show-edit-modal="showEditModal" @delete-item="deleteItem"
-                            @show-add-modal="showAddModal" />
+                        <recursive-item v-for="item in menuDataList" :key="item.id" :item="item"
+                            :columns="list_view_columns" :level="0" @show-edit-modal="doEditShowDrawer"
+                            @delete-item="deleteItem" @show-add-modal="doAddShowDrawer" />
                     </tbody>
                 </table>
             </div>
 
-            <!-- 模态框 -->
-            <modal v-if="showModal" @close="closeModal">
-                <template v-slot:header>
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="bi bi-file-earmark-plus"></i> {{ modalTitle }}
-                        </h5>
+            <!-- 抽屉组件 -->
+            <div>
+                <a-drawer title="菜单信息" :closable="false" :open="showDrawer" @close="doOnClose">
+                    <!-- 表单项 -->
+                    <div class="drawer-content">
+                        <div v-for="column in drawer_view_columns" :key="column.name" class="form-group">
+                            <label :for="column.name">
+                                <i class="bi bi-person"></i> {{ column.name }}：
+                            </label>
+                            <!-- 非类型选择项的输入框 -->
+                            <a-input v-show="column.value !== 'permissionList' && column.value !== 'type'"
+                                :disabled=column.disabled :value="currentMenuData[column.value]"
+                                :maxlength=column.maxlength
+                                @input="event => currentMenuData[column.value] = event.target.value"
+                                :placeholder=column.placeholder :id="column.name" />
+                            <!--权限select -->
+                            <a-select v-if="column.value === 'permissionList'"
+                                v-model:value="currentMenuData[column.value]" show-search mode="multiple" :maxTagCount=3
+                                style="width: 100%" placeholder="Please select" :options="drawer_permission_data_list"
+                                :fieldNames="{ label: 'permissionName', value: 'permissionCode'}"
+                                @change="handleChange" :filterOption="filterOption"></a-select>
+                            <!--目录类型select -->
+                            <a-select v-if="column.value === 'type'" v-model:value="currentMenuData[column.value]"
+                                style="width: 100%" placeholder="Please select" :options="typeSelectOptionData"
+                                @change="handleChange"></a-select>
+                        </div>
                     </div>
-                </template>
-
-                <template v-slot:body>
-                    <div class="modal-body">
-                        <form @submit.prevent="saveItem">
-                            <!-- 表单项 -->
-                            <div v-for="column in modal_view_columns" :key="column.value" class="form-group">
-                                <label :for="column.value">
-                                    <i class="bi bi-person"></i> {{ column.name }}
-                                </label>
-                                <input type="text"
-                                    v-model="currentItem[column.value]" :id="column.value" class="form-control" />
-                            </div>
-
-                            <!-- 表单操作按钮 -->
-                            <div class="modal-footer">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-save"></i> 保存
-                                </button>
-                                <button type="button" class="btn btn-secondary" @click="closeModal">
-                                    <i class="bi bi-x-circle"></i> 取消
-                                </button>
-                            </div>
-                        </form>
+                    <div class="drawer-footer">
+                        <a-button @click="doOnClose" class="btn-cancel">取消</a-button>
+                        <a-button type="primary" @click="drawerSaveFunc" class="btn-save">保存</a-button>
                     </div>
-                </template>
-            </modal>
+                </a-drawer>
+            </div>
         </div>
     </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import Modal from '@/components/common-components/modal.vue';
 import RecursiveItem from '@/components/user-system/organization-manager/RecursiveItem.vue';
-import { addMenuInfo, deleteMenuInfo, editMenuInfo, getMenuList } from './api/MenuManager';
+import { addMenuInfo, deleteMenuInfo, editMenuInfo, getMenuByCode, getMenuList } from './api/MenuManager';
+import { getPermissionList } from '../permission-manager/api/PermissionManager';
+import { message } from 'ant-design-vue';
 
+// ==================================================抽屉逻辑开始====================================================
+// 抽屉组件
+// 控制抽屉显示/隐藏的状态
+const showDrawer = ref(false);
+const currentMenuData = ref({});
+const drawer_view_columns = ref();
+const drawer_permission_data_list = ref([]);
+//目录类型选项
+const typeSelectOptionData = [
+    { label: "目录", value: 0 },
+    { label: "菜单", value: 1 },
+    { label: "按钮/功能", value: 2 }
+]
+// 权限下拉选择框search功能
+const filterOption = (inputValue, option) => {
+    const { permissionName, permissionCode } = option;
+    const lowerInputValue = inputValue.toLowerCase();
+    return (
+        permissionName.toLowerCase().includes(lowerInputValue) ||
+        permissionCode.toLowerCase().includes(lowerInputValue)
+    );
+}
+
+const drawer_add_view_columns = ref([
+    { name: '菜单名称', value: 'menuName', iconFlag: true, disabled: false },
+    { name: '父级编码', value: 'parentMenuCode', iconFlag: false, disabled: true },
+    { name: '菜单编码', value: 'menuCode', iconFlag: false, disabled: false, placeholder: "请输入2位编码" , maxlength : 2},
+    { name: '权限资源', value: 'permissionList', iconFlag: false, disabled: false },
+    { name: '菜单类型', value: 'type', iconFlag: false, disabled: false },
+    { name: '排序', value: 'sort', iconFlag: false, disabled: false }
+]);
+
+const drawer_edit_view_columns = ref([
+    { name: '菜单名称', value: 'menuName', iconFlag: true, disabled: false },
+    { name: '父级编码', value: 'parentMenuCode', iconFlag: false, disabled: true },
+    { name: '菜单编码', value: 'menuCode', iconFlag: false, disabled: false, placeholder: "请输入2位编码" },
+    { name: '资源权限', value: 'permissionList', iconFlag: false, disabled: false },
+    { name: '排序', value: 'sort', iconFlag: false, disabled: false },
+    { name: '类型', value: 'type', iconFlag: false, disabled: false },
+]);
+
+const doAddRootShowDrawer = () => {
+    currentMenuData.value = {}; // 初始化 currentMenuData 为一个空对象
+    currentMenuData.value.type = 0;
+    currentMenuData.value.parentMenuCode = -1;
+    drawer_view_columns.value = drawer_add_view_columns.value;
+    getPermissionListFunc();
+    showDrawer.value = true;
+}
+const doAddShowDrawer = (parentData) => {
+    currentMenuData.value = {}; // 初始化 currentMenuData 为一个空对象
+    currentMenuData.value.parentMenuCode = parentData.menuCode;
+    drawer_view_columns.value = drawer_add_view_columns.value;
+    getPermissionListFunc();
+    showDrawer.value = true;
+}
+
+const doEditShowDrawer = (userData) => {
+    getMenuByCodeFunc(userData.menuCode);
+    getPermissionListFunc();
+    drawer_view_columns.value = drawer_edit_view_columns.value;
+    showDrawer.value = true;
+}
+const doOnClose = () => {
+    drawer_view_columns.value = [];
+    showDrawer.value = false;
+};
+
+const drawerSaveFunc = () => {
+    saveItem();
+}
+
+// 保存项（新增或编辑）
+const saveItem = async () => {
+    const params = currentMenuData.value;
+    //编辑
+    if (currentMenuData.value.id) {
+        const response = await editMenuInfo(params);
+        if (response.data.code === 200 && response.data.data === true) {
+            message.success("保存成功", 2, onclose)
+        } else {
+            message.error(response.data.message, 2, onclose)
+            return;
+        }
+        doOnClose();
+        fetchMenuListData();
+        return;
+    }
+    //新增
+    const response = await addMenuInfo(params);
+    if (response.data.code === 200 && response.data.data === true) {
+        message.success("保存成功", 2, onclose)
+    } else {
+        message.error(response.data.message, 2, onclose)
+        return;
+    }
+    doOnClose();
+    fetchMenuListData();
+};
+
+const getPermissionListFunc = async () => {
+    const params = {};
+    const response = await getPermissionList(params);
+    drawer_permission_data_list.value = response.data.data;
+}
+
+const getMenuByCodeFunc = async (menuCode) => {
+    const params = { "menuCode": menuCode };
+    const response = await getMenuByCode(params);
+    currentMenuData.value = response.data.data;
+}
+
+// ==================================================抽屉逻辑结束====================================================
+
+// ==================================================列表逻辑开始====================================================
 // 列表展示列
 const list_view_columns = ref([
     { name: '菜单名称', value: 'menuName', iconFlag: true },
     { name: '菜单编码', value: 'menuCode', iconFlag: false },
     { name: '排序', value: 'sort', iconFlag: false },
-    { name: '类型', value: 'type', iconFlag: false },
+    { name: '类型', value: 'typeDesc', iconFlag: false },
 ]);
 
-// 模态框展示列
-const modal_view_columns = ref(list_view_columns.value);
-const add_view_columns = ref(list_view_columns.value);
-const edit_view_columns = ref(list_view_columns.value);
 
 const userNameKeyword = ref(''); // 菜单名称搜索关键词
 const phoneKeyword = ref(''); // 菜单编码搜索关键词
-const items = ref([]); // 列表数据
+const menuDataList = ref([]); // 列表数据
 const currentPage = ref(1); // 当前页码
-const showModal = ref(false); // 是否显示模态框
-const modalTitle = ref(''); // 模态框标题
-const currentItem = ref({}); // 当前编辑或新增的项
 const loading = ref(false); // 加载状态
-const modalType = ref(''); // 模态框类型：新增或编辑
 
 // 搜索数据
 const searchData = async () => {
@@ -157,7 +263,9 @@ const fetchMenuListData = async () => {
             menuCode: phoneKeyword.value
         };
         const response = await getMenuList(params);
-        items.value = response.data.data;
+        menuDataList.value = response.data.data;
+        //菜单类型desc
+        wrapTypeDescDataFunc(menuDataList.value);
     } catch (error) {
         console.error('获取数据失败:', error);
     } finally {
@@ -165,49 +273,18 @@ const fetchMenuListData = async () => {
     }
 };
 
-// 显示新增模态框
-const showAddModal = (item) => {
-    showModal.value = true;
-    modalTitle.value = '新增';
-    currentItem.value = { parentMenuCode: item.menuCode || -1 }; // 默认值
-    modal_view_columns.value = add_view_columns.value;
-    modalType.value = 'add';
-};
-
-// 显示新增根目录模态框
-const showAddRootModal = () => {
-    showModal.value = true;
-    modalTitle.value = '新增根目录';
-    currentItem.value = { parentMenuCode: -1 }; // 根目录的 parentCode  
-    modal_view_columns.value = add_view_columns.value;
-    modalType.value = 'add';
-};
-
-// 显示编辑模态框
-const showEditModal = (item) => {
-    showModal.value = true;
-    modalTitle.value = '编辑';
-    currentItem.value = { ...item };
-    modal_view_columns.value = edit_view_columns.value;
-    modalType.value = 'edit';
-};
-
-// 关闭模态框
-const closeModal = () => {
-    showModal.value = false;
-};
-
-// 保存项（新增或编辑）
-const saveItem = async () => {
-    const params = currentItem.value;
-    if (currentItem.value.id) {
-        await editMenuInfo(params);
-    } else {
-        await addMenuInfo(params);
+const wrapTypeDescDataFunc = (targetDataList) => {
+    if (!targetDataList) {
+        return;
     }
-    showModal.value = false;
-    fetchMenuListData();
-};
+    targetDataList.forEach(menudata => {
+        const selectedOption = typeSelectOptionData.find(option => option.value === menudata.type);
+        menudata.typeDesc = selectedOption ? selectedOption.label : '未知类型'; // '未知类型' 可以根据需要调整
+        if (menudata.children) {
+            wrapTypeDescDataFunc(menudata.children);
+        }
+    })
+}
 
 // 删除项（功能暂未实现）
 const deleteItem = async (item) => {
@@ -215,12 +292,14 @@ const deleteItem = async (item) => {
         menuCode: item.menuCode
     }
     const response = await deleteMenuInfo(params);
-    if(response.data.code !== 200){
+    if (response.data.code !== 200) {
         window.alert(response.data.message);
         return;
     }
     fetchMenuListData();
 };
+// ==================================================列表逻辑结束====================================================
+
 
 // 页面挂载后获取菜单列表数据
 onMounted(async () => {
@@ -260,7 +339,7 @@ onMounted(async () => {
 .list-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-menuDataList: center;
     padding: 16px;
     background-color: #f5f5f5;
     border-radius: 8px;
@@ -295,7 +374,7 @@ onMounted(async () => {
 .loading-spinner {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-menuDataList: center;
     height: 100%;
 }
 
@@ -370,33 +449,6 @@ onMounted(async () => {
     background-color: #ff7875;
 }
 
-/* 模态框样式 */
-.modal-header {
-    color: white;
-    border-top-left-radius: 0.3rem;
-    border-top-right-radius: 0.3rem;
-}
-
-.modal-title {
-    display: flex;
-    align-items: center;
-}
-
-.modal-title i {
-    margin-right: 0.5rem;
-}
-
-.modal-body {
-    padding: 1.5rem;
-    background-color: #f9f9f9;
-}
-
-.modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 1.5rem;
-}
-
 /* 表单组样式 */
 .form-group {
     margin-bottom: 1rem;
@@ -404,7 +456,7 @@ onMounted(async () => {
 
 .form-group label {
     display: flex;
-    align-items: center;
+    align-menuDataList: center;
     font-weight: bold;
     margin-bottom: 0.5rem;
 }
@@ -428,10 +480,11 @@ onMounted(async () => {
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
+
 /* 按钮样式 */
 .btn {
     display: inline-flex;
-    align-items: center;
+    align-menuDataList: center;
     padding: 0.5rem 1rem;
     font-size: 1rem;
     border-radius: 0.25rem;
@@ -460,4 +513,67 @@ onMounted(async () => {
     background-color: #5a6268;
     border-color: #545b62;
 }
+
+/* =========================================抽屉底部样式start===================================== */
+.drawer-content {
+    padding: 1rem;
+}
+
+.form-group {
+    display: flex;
+    align-menuDataList: center;
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    font-weight: bold;
+    color: #004d00;
+    margin-right: 1rem;
+    flex: 0 0 80px;
+    /* Adjust width as needed */
+    text-align: right;
+}
+
+.form-group .a-input,
+.form-group .a-tree-select,
+.form-group .a-input-password {
+    width: 70%;
+}
+
+.drawer-footer {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: calc(100% - 1rem);
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-top: 1px solid #e8e8e8;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.drawer-footer .btn-cancel {
+    background-color: #4a6a41;
+    color: #fff;
+    border: none;
+    transition: background-color 0.3s;
+}
+
+.drawer-footer .btn-cancel:hover {
+    background-color: #3b5a32;
+}
+
+.drawer-footer .btn-save {
+    background-color: #007f00;
+    color: #fff;
+    border: none;
+    transition: background-color 0.3s;
+}
+
+.drawer-footer .btn-save:hover {
+    background-color: #005d00;
+}
+
+/* =========================================抽屉底部样式end===================================== */
 </style>

@@ -18,7 +18,7 @@
 </template>
 
 <script setup>
-import { ref, watch, defineProps, defineEmits } from 'vue';
+import { ref, watch} from 'vue';
 import TreeNode from './DropdownTreeNode.vue';
 
 // 定义组件的 props

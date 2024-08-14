@@ -81,8 +81,7 @@
                                 <template v-if="column.name == '是否启用'">
                                     <!-- @click="handleConfirm"  -->
                                     <a-popconfirm title="Are you sure delete this task?" ok-text="Yes" cancel-text="No"
-                                        @confirm="userData[column.value] = !userData[column.value]"
-                                        @cancel="handleCancel">
+                                        @confirm="handleConfirm(userData, column.value)" @cancel="handleCancel">
                                         <div style="position: relative;">
                                             <a-switch v-model:checked="userData[column.value]" />
                                             <div style="position: absolute;inset: 0;"></div>
@@ -149,6 +148,7 @@
                             </a-space>
                             <!-- 角色select -->
                             <a-select v-show="column.value === 'roleList'" v-model:value="suffRoleList" mode="multiple"
+                                :maxTagCount="3"
                                 style="width: 100%" placeholder="请选择" :options="allRoleDataList"
                                 :field-names="{ label: 'roleName', value: 'roleCode' }" @change="handleRoleChange">
                             </a-select>
@@ -164,7 +164,6 @@
                         <a-button type="primary" @click="rightDrawerSaveFunc" class="btn-save">保存</a-button>
                     </div>
                 </a-drawer>
-
             </div>
 
         </div>
@@ -175,8 +174,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import Pagination from '@/components/common-components/pagenation.vue';
-import TreeComponent from '@/components/user-system/common/tree/TreeComponent.vue';
-import { addUserInfo, editUserInfo, getOrganizationList, getUserInfoList, removeByUserCode } from '@/components/user-system/user-manager/api/UserManager';
+import { addUserInfo, changeEnable, editUserInfo, getOrganizationList, getUserInfoList, removeByUserCode } from '@/components/user-system/user-manager/api/UserManager';
 import { getAllRoleList } from '../role-manager/api/RoleManager';
 
 //抽屉组件
@@ -303,6 +301,25 @@ const totalCount = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10); // 初始化每页显示10条
 
+// 处理启用确认
+function handleConfirm(userData, columnValue) {
+    dataEnableFunc(userData);
+}
+
+// 列表启用
+const dataEnableFunc = async (userData) => {
+    // 修改数据
+    const params = { "id": userData.id, "activeStatus": !userData.activeStatus };
+    const response = await changeEnable(params);
+    if (response.data.code !== 200) {
+        alert(response.data.message);
+        return;
+    } else {
+        // 修改成功 - 调整按钮值
+        userData.activeStatus = !userData.activeStatus
+    }
+}
+
 // 处理分页变化事件
 const handlePageChange = (page) => {
     currentPage.value = page;
@@ -367,6 +384,7 @@ const fetchUserListDataFunc = async () => {
         totalCount.value = response.data.data.totalCount;
     } catch (error) {
         console.error('Error fetching data:', error);
+        alert("服务开小差了哟");
     } finally {
         loading.value = false;
     }
@@ -426,12 +444,6 @@ onMounted(() => {
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     overflow-y: auto;
     border-radius: 8px;
-    font-family: Arial, sans-serif;
-    /* 统一字体样式 */
-    font-size: 14px;
-    /* 统一字体大小 */
-    line-height: 1.5;
-    /* 统一行高 */
 }
 
 /* 列表视图样式 */
@@ -443,12 +455,6 @@ onMounted(() => {
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    font-family: Arial, sans-serif;
-    /* 统一字体样式 */
-    font-size: 14px;
-    /* 统一字体大小 */
-    line-height: 1.5;
-    /* 统一行高 */
 }
 
 /* 列表头部样式 */

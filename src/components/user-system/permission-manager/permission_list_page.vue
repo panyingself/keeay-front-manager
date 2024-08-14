@@ -4,8 +4,8 @@
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="#">用户中台</a></li>
-                <li class="breadcrumb-item"><a href="#">角色管理</a></li>
-                <li class="breadcrumb-item active" aria-current="page">角色列表</li>
+                <li class="breadcrumb-item"><a href="#">权限管理</a></li>
+                <li class="breadcrumb-item active" aria-current="page">权限列表</li>
             </ol>
         </nav>
     </div>
@@ -16,12 +16,15 @@
             <!-- 列表header区域 -->
             <div class="list-header">
                 <div class="list-controls">
-                    <!-- 用户名搜索框 -->
-                    <a style="margin-right: 16px;">用户名</a>
-                    <input type="text" v-model="userNameKeyword" placeholder="用户名搜索..." @input="searchData" />
-                    <!-- 手机号搜索框 -->
-                    <a style="margin-right: 16px;">手机号</a>
-                    <input type="text" v-model="phoneKeyword" placeholder="手机号搜索..." @input="searchData" />
+                    <!-- 权限名称搜索框 -->
+                    <a style="margin-right: 16px;">权限名称</a>
+                    <input type="text" v-model="permissionNameKeyword" placeholder="权限名称搜索..." @input="searchData" />
+                    <!-- 权限编码搜索框 -->
+                    <a style="margin-right: 16px;">权限编码</a>
+                    <input type="text" v-model="permissionCodeKeyword" placeholder="权限编码搜索..." @input="searchData" />
+                    <!-- 权限编码搜索框 -->
+                    <a style="margin-right: 16px;">uri匹配</a>
+                    <input type="text" v-model="uriKeyword" placeholder="uri搜索..." @input="searchData" />
                 </div>
                 <!-- 搜索按钮 -->
                 <button id="list-header-search" class="btn btn-success" style="position: absolute; right: 8%"
@@ -53,7 +56,7 @@
                         </tr>
                     </thead>
                     <transition-group name="fade" tag="tbody">
-                        <tr v-for="item in items" :key="item.id" class="table-row">
+                        <tr v-for="item in permissionDataList" :key="item.id" class="table-row">
                             <!-- 表格数据 -->
                             <td v-for="column in list_view_columns" :key="column.value">
                                 {{ item[column.value] }}
@@ -63,9 +66,12 @@
                                 <button class="btn btn-sm btn-info" @click="doEditShowDrawer(item)">
                                     <i class="bi bi-pencil"></i> 编辑
                                 </button>
-                                <button class="btn btn-sm btn-danger" @click="deleteItem(item.id)">
-                                    <i class="bi bi-trash"></i> 删除
-                                </button>
+                                <a-popconfirm title="您确定要删除这条记录吗?" ok-text="确定" cancel-text="取消"
+                                    @confirm="deleteItemFunc(item.permissionCode)" @cancel="handleCancel">
+                                    <button class="btn btn-sm btn-danger" style="margin-left: 5px;">
+                                        删除
+                                    </button>
+                                </a-popconfirm>
                             </td>
                         </tr>
                     </transition-group>
@@ -88,31 +94,20 @@
                                 <i class="bi bi-person"></i> {{ column.name }}：
                             </label>
                             <!-- 非机构选择项的输入框 -->
-                            <a-input
-                                v-show="column.value !== 'activeStatus' && column.value !== 'menuCodeList'"
+                            <a-input v-show="column.value !== 'activeStatus' && column.value !== 'menuCodeList'"
                                 :value="currentUserData[column.value]"
                                 @input="event => currentUserData[column.value] = event.target.value"
                                 :id="column.name" />
                             <!--菜单权限select -->
                             <a-tree-select v-if="column.value === 'menuCodeList'"
-                                v-model:value="currentUserData[column.value]"
-                                show-search
-                                style="width: 100%"
-                                :treeCheckable="true"
-                                :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
-                                placeholder="Please select"
-                                allow-clear
-                                multiple
-                                tree-default-expand-all
-                                :maxTagCount = 4
-                                :tree-data="drawer_menu_data_list"
-                                :field-names="{
-                                children: 'children',
-                                label: 'menuName',
-                                value: 'menuCode',
-                                }"
-                                tree-node-filter-prop="name"
-                            ></a-tree-select>
+                                v-model:value="currentUserData[column.value]" show-search style="width: 100%"
+                                :treeCheckable="true" :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
+                                placeholder="Please select" allow-clear multiple tree-default-expand-all :maxTagCount=4
+                                :tree-data="drawer_menu_data_list" :field-names="{
+                                    children: 'children',
+                                    label: 'menuName',
+                                    value: 'menuCode',
+                                }" tree-node-filter-prop="name"></a-tree-select>
                             <!-- 是否启用 -->
                             <template v-if="column.value == 'activeStatus'">
                                 <a-switch v-model:checked="currentUserData[column.value]" />
@@ -132,8 +127,8 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import Pagination from '@/components/common-components/pagenation.vue';
-import { addRoleInfo, editRoleInfo, getRoleList } from './api/RoleManager';
-import { getMenuList } from '../menu-manager/api/MenuManager';
+import { addPermissionInfo, deletePermissionInfo, editPermissionInfo, getPagePermissionList } from './api/PermissionManager';
+import { message } from 'ant-design-vue';
 
 // ==================================================抽屉逻辑开始====================================================
 // 抽屉组件
@@ -144,26 +139,21 @@ const drawer_view_columns = ref();
 const drawer_menu_data_list = ref([]);
 
 const drawer_add_view_columns = ref([
-    { name: '角色名称', value: 'roleName' },
-    { name: '角色编码', value: 'roleCode' },
-    { name: '菜单权限', value: 'menuCodeList' },
-    { name: '备注', value: 'remark' },
-    { name: '状态', value: 'activeStatus' },
+    { name: '权限名称', value: 'permissionName' },
+    { name: 'uri', value: 'uri' },
 ]);
 
 const drawer_edit_view_columns = ref([
-    { name: '角色名称', value: 'roleName' },
-    { name: '角色编码', value: 'roleCode' },
-    { name: '菜单权限', value: 'menuCodeList' },
-    { name: '备注', value: 'remark' },
-    { name: '状态', value: 'activeStatus' },
+    { name: '权限名称', value: 'permissionName' },
+    { name: 'uri', value: 'uri' },
+    { name: '创建时间', value: 'createTime' },
+    { name: '创建人', value: 'createUser' },
 ]);
 
 const doAddShowDrawer = () => {
     currentUserData.value = {}; // 初始化 currentUserData 为一个空对象
     showDrawer.value = true;
     drawer_view_columns.value = drawer_add_view_columns.value;
-    getMenuTreeList();
 
 }
 
@@ -171,7 +161,6 @@ const doEditShowDrawer = (userData) => {
     currentUserData.value = userData; // 初始化 currentUserData 为一个空对象
     showDrawer.value = true;
     drawer_view_columns.value = drawer_edit_view_columns.value;
-    getMenuTreeList();
 }
 const doOnClose = () => {
     drawer_view_columns.value = [];
@@ -186,66 +175,78 @@ const saveItem = async () => {
     //edit
     const params = currentUserData.value;
     if (currentUserData.value.id) {
-        await editRoleInfo(params);
-    } else {
-        await addRoleInfo(params);
+        const response = await editPermissionInfo(params);
+        if (response.data.code === 200 && response.data.data === true) {
+            doOnClose();
+            fetchpermissionListData();
+            message.success('保存成功', 2, onclose);
+            return;
+        }
+        message.error(response.data.message, 2, response.data.message);
+        return;
     }
-    doOnClose();
-    fetchRoleListData();
-};
+    const response = await addPermissionInfo(params);
+    if (response.data.code === 200 && response.data.data === true) {
+        doOnClose();
+        fetchpermissionListData();
+        message.success('保存成功', 2, onclose);
+        return;
+    }
+    message.error(response.data.message, 2, onclose);
 
-const getMenuTreeList = async() =>{
-    const response = await getMenuList();
-    drawer_menu_data_list.value = response.data.data;
-}
+};
 
 // ==================================================抽屉逻辑结束====================================================
 
 
 // ==================================================列表逻辑开始====================================================
 // 搜索条件
-const userNameKeyword = ref('');
-const phoneKeyword = ref('');
+const permissionNameKeyword = ref('');
+const permissionCodeKeyword = ref('');
+const uriKeyword = ref('');
 
 const loading = ref(false);
 const list_view_columns = ref([
-    { name: '角色名称', value: 'roleName' },
-    { name: '角色编码', value: 'roleCode' },
-    { name: '备注', value: 'remark' },
+    { name: '权限名称', value: 'permissionName' },
+    { name: '权限编码', value: 'permissionCode' },
+    { name: 'uri', value: 'uri' },
     { name: '创建时间', value: 'createTime' },
-    { name: '状态', value: 'activeStatus' },
+    { name: '创建人', value: 'createUser' },
+    { name: '修改时间', value: 'updateTime' },
+    { name: '修改人', value: 'updateUser' },
 ]);
 
 // 数据列表
-const items = ref([]);
+const permissionDataList = ref([]);
 const totalCount = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10); // 初始化每页显示10条
 
 const searchData = async () => {
     currentPage.value = 1;
-    fetchRoleListData();
+    fetchpermissionListData();
 };
 
 const resetData = async () => {
-    userNameKeyword.value = '';
-    phoneKeyword.value = '';
+    permissionNameKeyword.value = '';
+    permissionCodeKeyword.value = '';
     currentPage.value = 1;
-    fetchRoleListData();
+    fetchpermissionListData();
 };
 
-const fetchRoleListData = async () => {
+const fetchpermissionListData = async () => {
     loading.value = true;
     try {
         const params = {
             // 根据需要设置 API 请求参数
             currentPage: currentPage.value,
             pageSize: pageSize.value,
-            'name': userNameKeyword.value,
-            'code': phoneKeyword.value
+            'permissionNameKeyword': permissionNameKeyword.value,
+            'permissionCodeKeyword': permissionCodeKeyword.value,
+            'uriKeyword': uriKeyword.value
         };
-        const response = await getRoleList(params);
-        items.value = response.data.data.dataList;
+        const response = await getPagePermissionList(params);
+        permissionDataList.value = response.data.data.dataList;
         totalCount.value = response.data.data.totalCount;
     } catch (error) {
         console.error('获取数据失败:', error);
@@ -257,25 +258,32 @@ const fetchRoleListData = async () => {
 // 处理分页变化事件
 const handlePageChange = (page) => {
     currentPage.value = page;
-    fetchRoleListData();
+    fetchpermissionListData();
 };
 
 // 处理分页大小变化事件
 const handlePageSizeChange = (size) => {
     pageSize.value = size;
     currentPage.value = 1; // 重置到第一页
-    fetchRoleListData();
+    fetchpermissionListData();
 };
 
 
-const deleteItem = async (id) => {
-    alert("暂不支持该操作");
+const deleteItemFunc = async (permissionCode) => {
+    const params = { 'permissionCode': permissionCode };
+    const response = await deletePermissionInfo(params);
+    if (response.data.code === 200 && response.data.data === true) {
+        fetchpermissionListData();
+        message.success('删除成功', 2, onclose);
+        return;
+    }
+    message.error('删除失败', 2, onclose);
 };
 
 // ==================================================列表逻辑结束====================================================
 
 onMounted(async () => {
-    fetchRoleListData();
+    fetchpermissionListData();
 });
 </script>
 
@@ -317,7 +325,7 @@ onMounted(async () => {
 .list-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-permissionDataList: center;
     padding: 16px;
     background-color: #f5f5f5;
     border-radius: 8px;
@@ -359,7 +367,7 @@ onMounted(async () => {
 .loading-spinner {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-permissionDataList: center;
     height: 100%;
 }
 
@@ -476,7 +484,7 @@ onMounted(async () => {
 
 .form-group label {
     display: flex;
-    align-items: center;
+    align-permissionDataList: center;
     font-weight: bold;
     margin-bottom: 0.5rem;
 }
@@ -531,7 +539,7 @@ onMounted(async () => {
 /* 按钮样式 */
 .btn {
     display: inline-flex;
-    align-items: center;
+    align-permissionDataList: center;
     padding: 0.5rem 1rem;
     font-size: 1rem;
     border-radius: 0.25rem;
@@ -564,7 +572,7 @@ onMounted(async () => {
 /* 抽屉内容样式 */
 .form-group-row {
     display: flex;
-    align-items: center;
+    align-permissionDataList: center;
     margin-bottom: 0.5rem;
 }
 
@@ -588,7 +596,7 @@ onMounted(async () => {
 
 .form-group {
     display: flex;
-    align-items: center;
+    align-permissionDataList: center;
     margin-bottom: 1rem;
 }
 

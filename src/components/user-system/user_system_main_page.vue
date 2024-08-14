@@ -22,7 +22,8 @@
                                 <li>
                                     <hr class="dropdown-divider">
                                 </li>
-                                <li><a class="dropdown-item dropdown-item-link-py" href="#" @click="loginOut">退出</a></li>
+                                <li><a class="dropdown-item dropdown-item-link-py" href="#" @click="loginOut">退出</a>
+                                </li>
                             </ul>
                         </li>
                     </ul>
@@ -37,7 +38,7 @@
                 <ul v-if="menuItems.length > 0" class="nav flex-column">
                     <template v-for="item in menuItems">
                         <!-- 用户中台 -->
-                        <template v-if="item.menuCode == 20">
+                        <template v-if="item.menuCode == 10">
                             <!-- 忽略首层(用户中台本身) -->
                             <li v-for="itemChildren in item.children" class="nav-item">
                                 <!-- 判断是否为目录 -->
@@ -93,8 +94,9 @@ import organization_list_page_view from '@/components/user-system/organization-m
 import role_list_page_view from '@/components/user-system/role-manager/role_list_page.vue';
 import menu_list_page_view from '@/components/user-system/menu-manager/menu_list_page.vue';
 import { useLoginUserStore } from '@/components/common-components/data-store/UserLogin';
-import User_system_index_page from './index/user_system_index_page.vue';
+import User_system_index_page from '@/components/user-system/index/user_system_index_page.vue';
 import { useRouter } from 'vue-router';
+import Permission_list_page from '@/components/user-system/permission-manager/permission_list_page.vue';
 
 const menuItems = ref([]);
 const currentView = ref(User_system_index_page);
@@ -111,7 +113,7 @@ const loginOut = () => {
 const loadMenuData = async () => {
     try {
         const loginStore = useLoginUserStore();
-        const response = await axios.post('http://localhost:8089/keeay-user/api/menu/getTreeList', {}, {
+        const response = await axios.post('http://localhost:8089/keeay-user/api/menu/info/getTreeList', {}, {
             headers: {
                 "Authorization": loginStore.jwt
             }
@@ -147,6 +149,9 @@ const changeContent = (menuName, url) => {
     }
     if (menuName == "菜单管理") {
         currentView.value = menu_list_page_view;  // 修改为正确的组件
+    }
+    if (menuName == "权限管理") {
+        currentView.value = Permission_list_page;  // 修改为正确的组件
     }
 
 };

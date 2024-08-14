@@ -27,3 +27,10 @@ export const removeByUserCode = (params) => {
     return ajax_post("keeay-user", "/keeay-user/api/userinfo/removeByUserCode", params);
 }
 
+
+// 编辑用户信息
+export const changeEnable = (params) => {
+    return ajax_post("keeay-user", "/keeay-user/api/userinfo/changeEnable", params);
+}
+
+
