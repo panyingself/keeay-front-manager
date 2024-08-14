@@ -80,10 +80,10 @@
                             <td v-for="column in list_view_columns" :key="column.value">
                                 <template v-if="column.name == '是否启用'">
                                     <!-- @click="handleConfirm"  -->
-                                    <a-popconfirm title="Are you sure delete this task?" ok-text="Yes" cancel-text="No"
+                                    <a-popconfirm title="Are you sure delete this task?" ok-text="Yes" cancel-text="No" 
                                         @confirm="handleConfirm(userData, column.value)" @cancel="handleCancel">
                                         <div style="position: relative;">
-                                            <a-switch v-model:checked="userData[column.value]" />
+                                            <a-switch v-model:checked="userData[column.value]" checked-children="启用" un-checked-children="禁用"/>
                                             <div style="position: absolute;inset: 0;"></div>
                                         </div>
                                     </a-popconfirm>
@@ -104,7 +104,7 @@
                                 </button>
                                 <a-popconfirm title="您确定要删除这条记录吗?" ok-text="确定" cancel-text="取消"
                                     @confirm="removeByUserCodeFunc(userData.userCode)" @cancel="handleCancel">
-                                    <button class="btn btn-sm btn-danger" style="margin-left: 5px;">
+                                    <button class="btn btn-sm btn-danger" style="margin-left: 1%;">
                                         删除
                                     </button>
                                 </a-popconfirm>
@@ -445,7 +445,7 @@ onMounted(() => {
     overflow-y: auto;
     border-radius: 8px;
 }
-
+/* ====================================================列表样式start=============================================== */
 /* 列表视图样式 */
 .list-view {
     width: 90%;
@@ -644,6 +644,7 @@ onMounted(() => {
     cursor: pointer;
     transition: background-color 0.3s;
 }
+/* ====================================================列表样式end=============================================== */
 
 /* 为多选树组件添加样式 */
 .tree-container {

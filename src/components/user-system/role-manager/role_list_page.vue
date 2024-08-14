@@ -53,17 +53,30 @@
                         </tr>
                     </thead>
                     <transition-group name="fade" tag="tbody">
-                        <tr v-for="item in items" :key="item.id" class="table-row">
+                        <tr v-for="record in recordDataList" :key="record.id" class="table-row">
                             <!-- 表格数据 -->
                             <td v-for="column in list_view_columns" :key="column.value">
-                                {{ item[column.value] }}
+                                <template v-if="column.value == 'activeStatus'">
+                                    <!-- @click="handleConfirm"  -->
+                                    <a-popconfirm title="确定要改变激活状态吗?" ok-text="Yes" cancel-text="No"
+                                        @confirm="dataEnableFunc(record)" @cancel="handleCancel">
+                                        <div style="position: relative;">
+                                            <a-switch v-model:checked="record[column.value]" :unCheckedValue="0"
+                                                :checkedValue="1" checked-children="启用" un-checked-children="禁用" />
+                                            <div style="position: absolute;inset: 0;"></div>
+                                        </div>
+                                    </a-popconfirm>
+                                </template>
+                                <template v-else>
+                                    {{ record[column.value] }}
+                                </template>
                             </td>
                             <!-- 操作按钮 -->
                             <td>
-                                <button class="btn btn-sm btn-info" @click="doEditShowDrawer(item)">
+                                <button class="btn btn-sm btn-warning" @click="doEditShowDrawer(record)">
                                     <i class="bi bi-pencil"></i> 编辑
                                 </button>
-                                <button class="btn btn-sm btn-danger" @click="deleteItem(item.id)">
+                                <button class="btn btn-sm btn-danger" @click="deleteItem(record.id)" style="margin-left: 2%;">
                                     <i class="bi bi-trash"></i> 删除
                                 </button>
                             </td>
@@ -88,34 +101,24 @@
                                 <i class="bi bi-person"></i> {{ column.name }}：
                             </label>
                             <!-- 非机构选择项的输入框 -->
-                            <a-input
-                                v-show="column.value !== 'activeStatus' && column.value !== 'menuCodeList'"
-                                :value="currentUserData[column.value]"
-                                @input="event => currentUserData[column.value] = event.target.value"
+                            <a-input v-show="column.value !== 'activeStatus' && column.value !== 'menuCodeList'"
+                                :value="currentDrawerData[column.value]"
+                                :disabled=column.disabled
+                                @input="event => currentDrawerData[column.value] = event.target.value"
                                 :id="column.name" />
                             <!--菜单权限select -->
                             <a-tree-select v-if="column.value === 'menuCodeList'"
-                                v-model:value="currentUserData[column.value]"
-                                show-search
-                                style="width: 100%"
-                                :treeCheckable="true"
-                                :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
-                                placeholder="Please select"
-                                allow-clear
-                                multiple
-                                tree-default-expand-all
-                                :maxTagCount = 4
-                                :tree-data="drawer_menu_data_list"
-                                :field-names="{
-                                children: 'children',
-                                label: 'menuName',
-                                value: 'menuCode',
-                                }"
-                                tree-node-filter-prop="name"
-                            ></a-tree-select>
+                                v-model:value="currentDrawerData[column.value]" show-search style="width: 100%"
+                                :treeCheckable="true" :dropdown-style="{ maxHeight: '400px', overflow: 'auto' }"
+                                placeholder="Please select" allow-clear multiple tree-default-expand-all :maxTagCount=4
+                                :tree-data="drawer_menu_data_list" :field-names="{
+                                    children: 'children',
+                                    label: 'menuName',
+                                    value: 'menuCode',
+                                }" tree-node-filter-prop="name"></a-tree-select>
                             <!-- 是否启用 -->
                             <template v-if="column.value == 'activeStatus'">
-                                <a-switch v-model:checked="currentUserData[column.value]" />
+                                <a-switch v-model:checked="currentDrawerData[column.value]" />
                             </template>
                         </div>
                     </div>
@@ -132,14 +135,16 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import Pagination from '@/components/common-components/pagenation.vue';
-import { addRoleInfo, editRoleInfo, getRoleList } from './api/RoleManager';
+import { addRoleInfo, changeEnable, editRoleInfo, fetchRoleDetailByCode, getRoleList } from './api/RoleManager';
 import { getMenuList } from '../menu-manager/api/MenuManager';
+import { message } from 'ant-design-vue';
 
-// ==================================================抽屉逻辑开始====================================================
+const flag = ref(true);
+// ==================================================抽屉js逻辑开始====================================================
 // 抽屉组件
 // 控制抽屉显示/隐藏的状态
 const showDrawer = ref(false);
-const currentUserData = ref({});
+const currentDrawerData = ref({});
 const drawer_view_columns = ref();
 const drawer_menu_data_list = ref([]);
 
@@ -153,14 +158,13 @@ const drawer_add_view_columns = ref([
 
 const drawer_edit_view_columns = ref([
     { name: '角色名称', value: 'roleName' },
-    { name: '角色编码', value: 'roleCode' },
+    { name: '角色编码', value: 'roleCode' , disabled: true},
     { name: '菜单权限', value: 'menuCodeList' },
     { name: '备注', value: 'remark' },
-    { name: '状态', value: 'activeStatus' },
 ]);
 
 const doAddShowDrawer = () => {
-    currentUserData.value = {}; // 初始化 currentUserData 为一个空对象
+    currentDrawerData.value = {}; // 初始化 currentDrawerData 为一个空对象
     showDrawer.value = true;
     drawer_view_columns.value = drawer_add_view_columns.value;
     getMenuTreeList();
@@ -168,11 +172,12 @@ const doAddShowDrawer = () => {
 }
 
 const doEditShowDrawer = (userData) => {
-    currentUserData.value = userData; // 初始化 currentUserData 为一个空对象
+    fetchRoleDetailDataFunc(userData.roleCode);
+    getMenuTreeList();
     showDrawer.value = true;
     drawer_view_columns.value = drawer_edit_view_columns.value;
-    getMenuTreeList();
 }
+
 const doOnClose = () => {
     drawer_view_columns.value = [];
     showDrawer.value = false;
@@ -184,8 +189,8 @@ const drawerSaveFunc = () => {
 
 const saveItem = async () => {
     //edit
-    const params = currentUserData.value;
-    if (currentUserData.value.id) {
+    const params = currentDrawerData.value;
+    if (currentDrawerData.value.id) {
         await editRoleInfo(params);
     } else {
         await addRoleInfo(params);
@@ -194,15 +199,26 @@ const saveItem = async () => {
     fetchRoleListData();
 };
 
-const getMenuTreeList = async() =>{
+// 根据code获取role详情数据
+const fetchRoleDetailDataFunc = async (code) => {
+    const params = { "code": code };
+    const response = await fetchRoleDetailByCode(params);
+    if (response.data.code === 200) {
+        currentDrawerData.value = response.data.data;
+        return;
+    }
+    message.error("系统异常", 2, onclose)
+}
+// 获取菜单列表数据
+const getMenuTreeList = async () => {
     const response = await getMenuList();
     drawer_menu_data_list.value = response.data.data;
 }
 
-// ==================================================抽屉逻辑结束====================================================
+// ==================================================抽屉js逻辑结束====================================================
 
 
-// ==================================================列表逻辑开始====================================================
+// ==================================================列表js逻辑开始====================================================
 // 搜索条件
 const userNameKeyword = ref('');
 const phoneKeyword = ref('');
@@ -217,7 +233,7 @@ const list_view_columns = ref([
 ]);
 
 // 数据列表
-const items = ref([]);
+const recordDataList = ref([]);
 const totalCount = ref(0);
 const currentPage = ref(1);
 const pageSize = ref(10); // 初始化每页显示10条
@@ -245,7 +261,7 @@ const fetchRoleListData = async () => {
             'code': phoneKeyword.value
         };
         const response = await getRoleList(params);
-        items.value = response.data.data.dataList;
+        recordDataList.value = response.data.data.dataList;
         totalCount.value = response.data.data.totalCount;
     } catch (error) {
         console.error('获取数据失败:', error);
@@ -254,6 +270,27 @@ const fetchRoleListData = async () => {
     }
 };
 
+// 列表启用
+const dataEnableFunc = async (record) => {
+    let newActiveStatus = 0;
+    // 修改成功 - 调整按钮值
+    if (record.activeStatus === 0) {
+        newActiveStatus = 1;
+    } else {
+        newActiveStatus = 0;
+    }
+    // 修改数据
+    const params = { "roleCode": record.roleCode, "activeStatus": newActiveStatus };
+    const response = await changeEnable(params);
+    if (response.data.code === 200 && response.data.data === true) {
+        // 修改成功 - 调整按钮值
+        record.activeStatus = newActiveStatus;
+
+        return;
+    } else {
+        message.error(response.data.message, 2, onclo);
+    }
+}
 // 处理分页变化事件
 const handlePageChange = (page) => {
     currentPage.value = page;
@@ -272,8 +309,7 @@ const deleteItem = async (id) => {
     alert("暂不支持该操作");
 };
 
-// ==================================================列表逻辑结束====================================================
-
+// ==================================================列表js逻辑结束====================================================
 onMounted(async () => {
     fetchRoleListData();
 });
@@ -295,22 +331,16 @@ onMounted(async () => {
     background-color: #f4f4f9;
 }
 
+/* ====================================================列表样式start=============================================== */
 /* 列表视图样式 */
 .list-view {
     width: 100%;
-    height: 100%;
     padding: 16px;
     background-color: #fff;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    font-family: Arial, sans-serif;
-    /* 统一字体样式 */
-    font-size: 14px;
-    /* 统一字体大小 */
-    line-height: 1.5;
-    /* 统一行高 */
 }
 
 /* 列表头部样式 */
@@ -324,12 +354,6 @@ onMounted(async () => {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     margin-bottom: 16px;
     border-bottom: 1px solid #e8e8e8;
-    font-family: Arial, sans-serif;
-    /* 统一字体样式 */
-    font-size: 14px;
-    /* 统一字体大小 */
-    line-height: 1.5;
-    /* 统一行高 */
 }
 
 /* 列表控件样式 */
@@ -346,6 +370,44 @@ onMounted(async () => {
 
 .list-controls .btn:hover {
     background-color: #40a9ff;
+}
+
+.role-info {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+}
+
+/* 角色列样式 */
+.role-info::after {
+    content: attr(title);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: #fff;
+    padding: 5px;
+    border-radius: 4px;
+    white-space: nowrap;
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 1;
+}
+
+.role-info:hover::after {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* 加载状态指示器 */
+.loading-spinner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
 }
 
 /* 列表内容区域样式 */
@@ -468,99 +530,9 @@ onMounted(async () => {
     cursor: pointer;
     transition: background-color 0.3s;
 }
+/* ====================================================列表样式end=============================================== */
 
-/* 表单组样式 */
-.form-group {
-    margin-bottom: 1rem;
-}
-
-.form-group label {
-    display: flex;
-    align-items: center;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-}
-
-.form-group label i {
-    margin-right: 0.5rem;
-}
-
-/* 输入框样式 */
-.form-control {
-    width: 100%;
-    padding: 0.5rem;
-    font-size: 1rem;
-    border-radius: 0.25rem;
-    border: 1px solid #ced4da;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.form-control:focus {
-    border-color: #80bdff;
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-/* 下拉选择框样式 */
-.form-control {
-    height: calc(2.5rem + 2px);
-    /* 调整高度 */
-    font-size: 1rem;
-    border-radius: 0.25rem;
-    border: 1px solid #ced4da;
-    background-color: #fff;
-}
-
-.form-control:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-/* 确保下拉框选项不被裁剪 */
-.form-control option {
-    padding: 0.5rem;
-}
-
-/* 设置下拉框最大高度，并启用滚动条 */
-.form-control {
-    max-height: 200px;
-    /* 根据需要调整 */
-    overflow-y: auto;
-}
-
-/* 按钮样式 */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
-    border-radius: 0.25rem;
-    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-    color: #fff;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #004085;
-}
-
-.btn-secondary {
-    background-color: #6c757d;
-    border-color: #6c757d;
-    color: #fff;
-    margin-left: 1rem;
-}
-
-.btn-secondary:hover {
-    background-color: #5a6268;
-    border-color: #545b62;
-}
-
+/* ====================================================抽屉样式start=============================================== */
 /* 抽屉内容样式 */
 .form-group-row {
     display: flex;
@@ -641,4 +613,5 @@ onMounted(async () => {
 .drawer-footer .btn-save:hover {
     background-color: #005d00;
 }
+/* ====================================================抽屉样式end=============================================== */
 </style>

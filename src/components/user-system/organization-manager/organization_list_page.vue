@@ -16,21 +16,21 @@
             <!-- 列表header区域 -->
             <div class="list-header">
                 <div class="list-controls">
-                    <!-- 用户名搜索框 -->
-                    <label for="userNameSearch" class="search-label">用户名</label>
-                    <input id="userNameSearch" type="text" v-model="userNameKeyword" placeholder="用户名搜索..."
-                        @input="searchData" />
+                    <!-- 机构名称搜索框 -->
+                    <label for="userNameSearch" class="search-label">机构名称</label>
+                    <input id="userNameSearch" type="text" v-model="organizationNameKeyword" placeholder="机构名称搜索..."
+                        @input="searchDataFunc" />
 
-                    <!-- 手机号搜索框 -->
-                    <label for="phoneSearch" class="search-label">手机号</label>
-                    <input id="phoneSearch" type="text" v-model="phoneKeyword" placeholder="手机号搜索..."
-                        @input="searchData" />
+                    <!-- 机构编码搜索框 -->
+                    <label for="phoneSearch" class="search-label">机构编码</label>
+                    <input id="phoneSearch" type="text" v-model="organizationCodeKeyword" placeholder="机构编码搜索..."
+                        @input="searchDataFunc" />
                 </div>
                 <!-- 操作按钮 -->
                 <div class="action-buttons">
-                    <button id="list-header-search" class="btn btn-success" @click="searchData">搜索</button>
-                    <button id="list-header-reset" class="btn btn-warning" @click="resetData">重置</button>
-                    <button @click="showAddModal" class="btn btn-info">
+                    <button id="list-header-search" class="btn btn-success" @click="searchDataFunc">搜索</button>
+                    <button id="list-header-reset" class="btn btn-warning" @click="resetDataFunc">重置</button>
+                    <button @click="doAddRootShowDrawerFunc" class="btn btn-info">
                         <i class="bi bi-plus"></i> 新增
                     </button>
                 </div>
@@ -41,117 +41,122 @@
                 <!-- 加载状态指示器 -->
                 <div v-if="loading" class="loading-spinner"></div>
                 <!-- 列表表格 -->
-                <table v-else class="table">
-                    <thead>
-                        <tr>
-                            <th v-for="column in list_view_columns" :key="column.value" class="fixed-column">{{
-                                column.name }}</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <recursive-item v-for="item in items" :key="item.id" :item="item" :columns="list_view_columns"
-                            :level="0" @show-edit-modal="showEditModal" @delete-item="deleteItem"
-                            @show-add-modal="showAddModal" />
-                    </tbody>
-                </table>
+                <a-table :columns="list_view_columns" :data-source="organizationDataList" :pagination="false" filterMode = "tree" 
+                    rowKey='code'>
+                    <template #bodyCell="{ column, record }">
+                        <template v-if="column.key === 'action'">
+                            <span>
+                                <button class="btn btn-sm btn-success" @click="doAddShowDrawerFunc(record)">
+                                    新增
+                                </button>
+                                <button class="btn btn-sm btn-warning" @click="doEditShowDrawerFunc(record)"
+                                    style="margin-left: 1%;">
+                                    编辑
+                                </button>
+                                <a-popconfirm title="您确定要删除这条记录吗?" ok-text="确定" cancel-text="取消"
+                                    @confirm="deleteItemFunc(record.code)" @cancel="handleCancel">
+                                    <button class="btn btn-sm btn-danger" style="margin-left: 1%;">
+                                        删除
+                                    </button>
+                                </a-popconfirm>
+                            </span>
+                        </template>
+                    </template>
+                </a-table>
             </div>
-
-            <!-- 模态框 -->
-            <modal v-if="showModal" @close="closeModal">
-                <template v-slot:header>
-                    <div class="modal-header">
-                        <h5 class="modal-title">
-                            <i class="bi bi-file-earmark-plus"></i> {{ modalTitle }}
-                        </h5>
-                    </div>
-                </template>
-                <template v-slot:body>
-                    <div class="modal-body">
-                        <form @submit.prevent="saveItem">
-                            <!-- 表单项 -->
-                            <div v-for="column in modal_view_columns" :key="column.value" class="form-group">
-                                <label :for="column.value">
-                                    <i class="bi bi-person"></i> {{ column.name }}
-                                </label>
-                                <input v-if="column.value !== 'organizationCode'" type="text"
-                                    v-model="currentItem[column.value]" :id="column.value" class="form-control" />
-                            </div>
-                            <!-- 表单操作按钮 -->
-                            <div class="modal-footer">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-save"></i> 保存
-                                </button>
-                                <button type="button" class="btn btn-secondary" @click="closeModal">
-                                    <i class="bi bi-x-circle"></i> 取消
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </template>
-            </modal>
         </div>
     </div>
+
+    <!-- drawer内容区域 -->
+    <div>
+        <a-drawer title="组织机构信息" :placement="placement" :closable="false" :open="showDrawer" @close="doOnCloseFunc">
+            <!-- 表单项 -->
+            <div class="drawer-content">
+                <div v-for="column in drawer_view_columns" :key="column.name" class="form-group">
+                    <label :for="column.name">
+                        <i class="bi bi-person"></i> {{ column.name }}：
+                    </label>
+                    <!-- 输入框 -->
+                    <a-input :disabled=column.disabled :value="currentDrawerData[column.value]"
+                        @input="event => currentDrawerData[column.value] = event.target.value" :id="column.name" />
+                </div>
+            </div>
+            <div class="drawer-footer">
+                <a-button @click="doOnCloseFunc" class="btn-cancel">取消</a-button>
+                <a-button type="primary" @click="drawerSaveFunc" class="btn-save">保存</a-button>
+            </div>
+        </a-drawer>
+    </div>
+
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import Modal from '@/components/common-components/modal.vue';
-import RecursiveItem from '@/components/user-system/organization-manager/RecursiveItem.vue';
-import { addOrganizationInfo, editOrganizationInfo, getOrganizationList } from './api/OrganizationManager';
+import { addOrganizationInfo, editOrganizationInfo, fetchOrganizationDetailById, getOrganizationList, removeOrganizationInfo } from './api/OrganizationManager';
+import { message } from 'ant-design-vue';
 
-// 列表视图列定义
-const list_view_columns = ref([
-    { name: '机构名称', value: 'name', iconFlag: true },
-    { name: '机构编码', value: 'code', iconFlag: false },
-    { name: '排序', value: 'showOrder', iconFlag: false },
-    { name: '状态', value: 'activeStatus', iconFlag: false },
-]);
-
-// 模态框视图列定义
-const modal_view_columns = ref(list_view_columns.value);
-const add_view_columns = ref(list_view_columns.value);
-const edit_view_columns = ref(list_view_columns.value);
-
-// 搜索关键字
-const userNameKeyword = ref('');
-const phoneKeyword = ref('');
-
-// 列表数据和分页
-const items = ref([]);
+//==========================================列表逻辑开始===============================================
+// 列表数据和分页数据定义(loading)
+const organizationDataList = ref([]);
 const currentPage = ref(1);
-
-// 模态框控制
-const showModal = ref(false);
-const modalTitle = ref('');
-const currentItem = ref({});
 const loading = ref(false);
-const modalType = ref('');
+
+// 搜索关键字定义
+const organizationNameKeyword = ref('');
+const organizationCodeKeyword = ref('');
 
 // 搜索数据
-const searchData = async () => {
+const searchDataFunc = async () => {
     currentPage.value = 1;
-    fetchOrganizationListData();
+    fetchOrganizationListDataFunc();
 };
 
+// 列表视图列定义
+const list_view_columns = ref(
+    [
+        {
+            title: '机构名称',
+            dataIndex: 'name',
+            key: 'name',
+            filterSearch: true
+        },
+        {
+            title: '机构编码',
+            dataIndex: 'code',
+            key: 'code',
+        },
+        {
+            title: '排序',
+            key: 'showOrder',
+            dataIndex: 'showOrder',
+            align: 'center'
+        },
+        {
+            title: '操作',
+            key: 'action',
+            align: 'center'
+        },
+    ]
+);
+
 // 重置数据
-const resetData = async () => {
-    userNameKeyword.value = '';
-    phoneKeyword.value = '';
+const resetDataFunc = async () => {
+    organizationNameKeyword.value = '';
+    organizationCodeKeyword.value = '';
     currentPage.value = 1;
-    fetchOrganizationListData();
+    fetchOrganizationListDataFunc();
 };
 
 // 获取组织列表数据
-const fetchOrganizationListData = async () => {
+const fetchOrganizationListDataFunc = async () => {
     loading.value = true;
     try {
         const params = {
-            name: userNameKeyword.value,
-            code: phoneKeyword.value
+            name: organizationNameKeyword.value,
+            code: organizationCodeKeyword.value
         };
         const response = await getOrganizationList(params);
-        items.value = response.data.data;
+        organizationDataList.value = response.data.data;
     } catch (error) {
         console.error('获取数据失败:', error);
     } finally {
@@ -159,48 +164,81 @@ const fetchOrganizationListData = async () => {
     }
 };
 
-// 显示新增模态框
-const showAddModal = (item) => {
-    showModal.value = true;
-    modalTitle.value = '新增';
-    currentItem.value = { parentCode: item?.code || -1 }; // 默认值
-    modal_view_columns.value = add_view_columns.value;
-    modalType.value = 'add';
+// 删除项目
+const deleteItemFunc = async (code) => {
+    const params = { "code": code };
+    const response = await removeOrganizationInfo(params);
+    if (response.data.code === 200 && response.data.data === true) {
+        message.success("删除成功", 2, onclose)
+        fetchOrganizationListDataFunc();
+        return;
+    }
+    message.error(response.data.message, 2, onclose)
 };
 
-// 显示新增根目录模态框
-const showAddRootModal = () => {
-    showModal.value = true;
-    modalTitle.value = '新增根目录';
-    currentItem.value = { parentCode: -1 }; // 根目录的 parentCode
-    modal_view_columns.value = add_view_columns.value;
-    modalType.value = 'add';
+//==========================================列表逻辑结束===============================================
+
+//==========================================drawer逻辑开始===============================================
+// 抽屉组件
+// 控制抽屉显示/隐藏的状态
+const showDrawer = ref(false);
+const currentDrawerData = ref({});
+const drawer_view_columns = ref();
+
+const drawer_add_view_columns = ref([
+    { name: '机构名称', value: 'name' },
+    { name: '父级编码', value: 'parentCode', disabled: true },
+    { name: '机构编码', value: 'code' },
+    { name: '排序', value: 'showOrder' },
+]);
+
+const drawer_edit_view_columns = ref([
+    { name: '机构名称', value: 'name' },
+    { name: '父级编码', value: 'parentCode', disabled: true },
+    { name: '机构编码', value: 'code', disabled: true },
+    { name: '排序', value: 'showOrder' },
+]);
+
+const doAddShowDrawerFunc = (record) => {
+    currentDrawerData.value = {}; // 初始化 currentDrawerData 为一个空对象
+    currentDrawerData.value.parentCode = record.code;
+    showDrawer.value = true;
+    drawer_view_columns.value = drawer_add_view_columns.value;
+    getMenuTreeList();
+}
+
+const doAddRootShowDrawerFunc = () => {
+    currentDrawerData.value = {}; // 初始化 currentDrawerData 为一个空对象
+    currentDrawerData.value.parentCode = -1;
+    showDrawer.value = true;
+    drawer_view_columns.value = drawer_add_view_columns.value;
+    getMenuTreeList();
+}
+
+const doEditShowDrawerFunc = (record) => {
+    //查询详情
+    fetchOrganizationDetailDataFunc(record);
+    //打开drawer
+    showDrawer.value = true;
+    //设置列
+    drawer_view_columns.value = drawer_edit_view_columns.value;
+}
+const doOnCloseFunc = () => {
+    drawer_view_columns.value = [];
+    showDrawer.value = false;
 };
 
-// 显示编辑模态框
-const showEditModal = (item) => {
-    showModal.value = true;
-    modalTitle.value = '编辑';
-    currentItem.value = { ...item };
-    modal_view_columns.value = edit_view_columns.value;
-    modalType.value = 'edit';
-};
-
-// 关闭模态框
-const closeModal = () => {
-    showModal.value = false;
-};
-
-// 保存项目
-const saveItem = async () => {
-    const params = currentItem.value;
+// 保存项目(新增/编辑)
+const drawerSaveFunc = async () => {
+    const params = currentDrawerData.value;
     try {
         if (params.id) {
             await editOrganizationInfo(params);
         } else {
             await addOrganizationInfo(params);
         }
-        fetchOrganizationListData();
+        doOnCloseFunc();
+        fetchOrganizationListDataFunc();
     } catch (error) {
         console.error('保存失败:', error);
     } finally {
@@ -208,14 +246,16 @@ const saveItem = async () => {
     }
 };
 
-// 删除项目
-const deleteItem = async (id) => {
-    alert("暂不支持该操作");
-};
+const fetchOrganizationDetailDataFunc = async (record) => {
+    const params = { "recordId": record.id }
+    const response = await fetchOrganizationDetailById(params);
+    currentDrawerData.value = response.data.data
+}
+//==========================================drawer逻辑结束===============================================
 
 // 组件挂载后获取数据
 onMounted(() => {
-    fetchOrganizationListData();
+    fetchOrganizationListDataFunc();
 });
 </script>
 
@@ -314,142 +354,65 @@ onMounted(() => {
     }
 }
 
-/* 表格样式 */
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+/* =========================================抽屉底部样式start===================================== */
+.drawer-content {
+    padding: 1rem;
 }
 
-.table th,
-.table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid #e8e8e8;
-}
-
-.table th {
-    background-color: #fafafa;
-}
-
-.table-row:hover {
-    background-color: #10945f;
-    color: white;
-}
-
-/* 按钮样式 */
-.btn {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
-    border-radius: 0.25rem;
-    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-    color: #fff;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #004085;
-}
-
-.btn-secondary {
-    background-color: #6c757d;
-    border-color: #6c757d;
-    color: #fff;
-}
-
-.btn-secondary:hover {
-    background-color: #5a6268;
-    border-color: #545b62;
-}
-
-.btn-success {
-    background-color: #28a745;
-    border-color: #28a745;
-    color: #fff;
-}
-
-.btn-warning {
-    background-color: #ffc107;
-    border-color: #ffc107;
-    color: #212529;
-}
-
-.btn-info {
-    background-color: #17a2b8;
-    border-color: #17a2b8;
-    color: #fff;
-}
-
-/* 模态框样式 */
-.modal-header {
-    background-color: #007bff;
-    color: white;
-    border-top-left-radius: 0.3rem;
-    border-top-right-radius: 0.3rem;
-}
-
-.modal-title {
-    display: flex;
-    align-items: center;
-}
-
-.modal-title i {
-    margin-right: 0.5rem;
-}
-
-.modal-body {
-    padding: 1.5rem;
-    background-color: #f9f9f9;
-}
-
-.modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 1.5rem;
-}
-
-/* 表单组样式 */
 .form-group {
+    display: flex;
     margin-bottom: 1rem;
 }
 
 .form-group label {
-    display: flex;
-    align-items: center;
     font-weight: bold;
-    margin-bottom: 0.5rem;
+    color: #004d00;
+    margin-right: 1rem;
+    flex: 0 0 80px;
+    /* Adjust width as needed */
+    text-align: right;
 }
 
-.form-group label i {
-    margin-right: 0.5rem;
+.form-group .a-input,
+.form-group .a-tree-select,
+.form-group .a-input-password {
+    width: 70%;
 }
 
-/* 输入框样式 */
-.form-control {
-    width: 100%;
-    padding: 0.5rem;
-    font-size: 1rem;
-    border-radius: 0.25rem;
-    border: 1px solid #ced4da;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+.drawer-footer {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: calc(100% - 1rem);
+    padding: 1rem;
+    background-color: #f9f9f9;
+    border-top: 1px solid #e8e8e8;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
 }
 
-.form-control:focus {
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+.drawer-footer .btn-cancel {
+    background-color: #4a6a41;
+    color: #fff;
+    border: none;
+    transition: background-color 0.3s;
 }
 
-.form-control {
-    height: calc(2.5rem + 2px);
-    overflow-y: auto;
-    max-height: 200px;
+.drawer-footer .btn-cancel:hover {
+    background-color: #3b5a32;
 }
+
+.drawer-footer .btn-save {
+    background-color: #007f00;
+    color: #fff;
+    border: none;
+    transition: background-color 0.3s;
+}
+
+.drawer-footer .btn-save:hover {
+    background-color: #005d00;
+}
+
+/* =========================================抽屉底部样式end===================================== */
 </style>

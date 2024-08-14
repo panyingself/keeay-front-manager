@@ -49,21 +49,26 @@
                 <div v-if="loading" class="loading-spinner"></div>
 
                 <!-- 列表表格 -->
-                <table v-else class="table">
-                    <thead>
-                        <tr>
-                            <th v-for="column in list_view_columns" :key="column.value" class="fixed-column">
-                                {{ column.name }}
-                            </th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <recursive-item v-for="item in menuDataList" :key="item.id" :item="item"
-                            :columns="list_view_columns" :level="0" @show-edit-modal="doEditShowDrawer"
-                            @delete-item="deleteItem" @show-add-modal="doAddShowDrawer" />
-                    </tbody>
-                </table>
+                <a-table :columns="list_view_columns" :data-source="menuDataList" :pagination=false rowKey = 'menuCode'>
+                    <template #bodyCell="{ column, record }">
+                        <template v-if="column.key === 'action'">
+                            <span>
+                                <button class="btn btn-sm btn-success" @click="doAddShowDrawer(record)">
+                                    新增
+                                </button>
+                                <button class="btn btn-sm btn-warning" @click="doEditShowDrawer(record)" style="margin-left: 1%;">
+                                    编辑
+                                </button>
+                                <a-popconfirm title="您确定要删除这条记录吗?" ok-text="确定" cancel-text="取消"
+                                    @confirm="deleteItem(record)" @cancel="handleCancel">
+                                    <button class="btn btn-sm btn-danger" style="margin-left: 1%;">
+                                        删除
+                                    </button>
+                                </a-popconfirm>
+                            </span>
+                        </template>
+                    </template>
+                </a-table>
             </div>
 
             <!-- 抽屉组件 -->
@@ -85,7 +90,7 @@
                             <a-select v-if="column.value === 'permissionList'"
                                 v-model:value="currentMenuData[column.value]" show-search mode="multiple" :maxTagCount=3
                                 style="width: 100%" placeholder="Please select" :options="drawer_permission_data_list"
-                                :fieldNames="{ label: 'permissionName', value: 'permissionCode'}"
+                                :fieldNames="{ label: 'permissionName', value: 'permissionCode' }"
                                 @change="handleChange" :filterOption="filterOption"></a-select>
                             <!--目录类型select -->
                             <a-select v-if="column.value === 'type'" v-model:value="currentMenuData[column.value]"
@@ -105,7 +110,6 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import RecursiveItem from '@/components/user-system/organization-manager/RecursiveItem.vue';
 import { addMenuInfo, deleteMenuInfo, editMenuInfo, getMenuByCode, getMenuList } from './api/MenuManager';
 import { getPermissionList } from '../permission-manager/api/PermissionManager';
 import { message } from 'ant-design-vue';
@@ -136,7 +140,7 @@ const filterOption = (inputValue, option) => {
 const drawer_add_view_columns = ref([
     { name: '菜单名称', value: 'menuName', iconFlag: true, disabled: false },
     { name: '父级编码', value: 'parentMenuCode', iconFlag: false, disabled: true },
-    { name: '菜单编码', value: 'menuCode', iconFlag: false, disabled: false, placeholder: "请输入2位编码" , maxlength : 2},
+    { name: '菜单编码', value: 'menuCode', iconFlag: false, disabled: false, placeholder: "请输入2位编码", maxlength: 2 },
     { name: '权限资源', value: 'permissionList', iconFlag: false, disabled: false },
     { name: '菜单类型', value: 'type', iconFlag: false, disabled: false },
     { name: '排序', value: 'sort', iconFlag: false, disabled: false }
@@ -145,7 +149,7 @@ const drawer_add_view_columns = ref([
 const drawer_edit_view_columns = ref([
     { name: '菜单名称', value: 'menuName', iconFlag: true, disabled: false },
     { name: '父级编码', value: 'parentMenuCode', iconFlag: false, disabled: true },
-    { name: '菜单编码', value: 'menuCode', iconFlag: false, disabled: false, placeholder: "请输入2位编码" },
+    { name: '菜单编码', value: 'menuCode', iconFlag: false, disabled: true, placeholder: "请输入2位编码" },
     { name: '资源权限', value: 'permissionList', iconFlag: false, disabled: false },
     { name: '排序', value: 'sort', iconFlag: false, disabled: false },
     { name: '类型', value: 'type', iconFlag: false, disabled: false },
@@ -222,17 +226,41 @@ const getMenuByCodeFunc = async (menuCode) => {
     currentMenuData.value = response.data.data;
 }
 
-// ==================================================抽屉逻辑结束====================================================
+// ==================================================抽屉js逻辑结束====================================================
 
-// ==================================================列表逻辑开始====================================================
+// ==================================================列表js逻辑开始====================================================
 // 列表展示列
-const list_view_columns = ref([
-    { name: '菜单名称', value: 'menuName', iconFlag: true },
-    { name: '菜单编码', value: 'menuCode', iconFlag: false },
-    { name: '排序', value: 'sort', iconFlag: false },
-    { name: '类型', value: 'typeDesc', iconFlag: false },
-]);
-
+const list_view_columns = ref(
+    [
+        {
+            title: '菜单名称',
+            dataIndex: 'menuName',
+            key: 'menuName',
+        },
+        {
+            title: '菜单编码',
+            dataIndex: 'menuCode',
+            key: 'menuCode',
+        },
+        {
+            title: '类型',
+            key: 'typeDesc',
+            dataIndex: 'typeDesc',
+            align: 'center'
+        },
+        {
+            title: '操作',
+            key: 'action',
+            align: 'center'
+        },
+    ]
+);
+// [
+//     { name: '菜单名称', value: 'menuName', iconFlag: true },
+//     { name: '菜单编码', value: 'menuCode', iconFlag: false },
+//     { name: '排序', value: 'sort', iconFlag: false },
+//     { name: '类型', value: 'typeDesc', iconFlag: false },
+// ]
 
 const userNameKeyword = ref(''); // 菜单名称搜索关键词
 const phoneKeyword = ref(''); // 菜单编码搜索关键词
@@ -298,7 +326,7 @@ const deleteItem = async (item) => {
     }
     fetchMenuListData();
 };
-// ==================================================列表逻辑结束====================================================
+// ==================================================列表js逻辑结束====================================================
 
 
 // 页面挂载后获取菜单列表数据
@@ -339,7 +367,6 @@ onMounted(async () => {
 .list-header {
     display: flex;
     justify-content: space-between;
-    align-menuDataList: center;
     padding: 16px;
     background-color: #f5f5f5;
     border-radius: 8px;
@@ -374,7 +401,6 @@ onMounted(async () => {
 .loading-spinner {
     display: flex;
     justify-content: center;
-    align-menuDataList: center;
     height: 100%;
 }
 
@@ -398,122 +424,6 @@ onMounted(async () => {
     }
 }
 
-/* 表格样式 */
-.table {
-    width: 100%;
-    border-collapse: collapse;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.table th,
-.table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid #e8e8e8;
-}
-
-.table th {
-    background-color: #fafafa;
-}
-
-/* 鼠标悬停时行背景色 */
-.table-row:hover {
-    background-color: #10945f;
-    color: white;
-}
-
-/* 按钮样式 */
-.table .btn {
-    padding: 4px 8px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.table .btn-info {
-    background-color: #4ae36e;
-    color: #fff;
-}
-
-.table .btn-info:hover {
-    background-color: #40a9ff;
-}
-
-.table .btn-danger {
-    background-color: #ff4d4f;
-    color: #fff;
-}
-
-.table .btn-danger:hover {
-    background-color: #ff7875;
-}
-
-/* 表单组样式 */
-.form-group {
-    margin-bottom: 1rem;
-}
-
-.form-group label {
-    display: flex;
-    align-menuDataList: center;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-}
-
-.form-group label i {
-    margin-right: 0.5rem;
-}
-
-/* 输入框样式 */
-.form-control {
-    width: 100%;
-    padding: 0.5rem;
-    font-size: 1rem;
-    border-radius: 0.25rem;
-    border: 1px solid #ced4da;
-    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.form-control:focus {
-    border-color: #80bdff;
-    outline: 0;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-/* 按钮样式 */
-.btn {
-    display: inline-flex;
-    align-menuDataList: center;
-    padding: 0.5rem 1rem;
-    font-size: 1rem;
-    border-radius: 0.25rem;
-    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-    color: #fff;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
-    border-color: #004085;
-}
-
-.btn-secondary {
-    background-color: #6c757d;
-    border-color: #6c757d;
-    color: #fff;
-    margin-left: 1rem;
-}
-
-.btn-secondary:hover {
-    background-color: #5a6268;
-    border-color: #545b62;
-}
-
 /* =========================================抽屉底部样式start===================================== */
 .drawer-content {
     padding: 1rem;
@@ -521,7 +431,6 @@ onMounted(async () => {
 
 .form-group {
     display: flex;
-    align-menuDataList: center;
     margin-bottom: 1rem;
 }
 
