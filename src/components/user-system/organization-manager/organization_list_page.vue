@@ -27,13 +27,20 @@
                         @input="searchDataFunc" />
                 </div>
                 <!-- 操作按钮 -->
-                <div class="action-buttons">
-                    <button id="list-header-search" class="btn btn-success" @click="searchDataFunc">搜索</button>
-                    <button id="list-header-reset" class="btn btn-warning" @click="resetDataFunc">重置</button>
-                    <button @click="doAddRootShowDrawerFunc" class="btn btn-info">
-                        <i class="bi bi-plus"></i> 新增
-                    </button>
-                </div>
+                 <!-- 搜索按钮 -->
+                <button id="list-header-search" class="btn btn-success" style="position: absolute; right: 8%"
+                    @click="searchDataFunc">
+                    搜索
+                </button>
+                <!-- 重置按钮 -->
+                <button id="list-header-reset" class="btn btn-warning" style="position: absolute; right: 5.5%"
+                    @click="resetDataFunc">
+                    重置
+                </button>
+                <!-- 新增按钮 -->
+                <button @click="doAddRootShowDrawerFunc" class="btn btn-info" style="position: absolute; right: 3%">
+                    <i class="bi bi-plus"></i> 新增
+                </button>
             </div>
 
             <!-- 列表内容区域 -->
@@ -46,16 +53,16 @@
                     <template #bodyCell="{ column, record }">
                         <template v-if="column.key === 'action'">
                             <span>
-                                <button class="btn btn-sm btn-success" @click="doAddShowDrawerFunc(record)">
+                                <button class="btn btn-sm btn-info" @click="doAddShowDrawerFunc(record)">
                                     新增
                                 </button>
                                 <button class="btn btn-sm btn-warning" @click="doEditShowDrawerFunc(record)"
-                                    style="margin-left: 1%;">
+                                    style="margin-left: 0.75%;">
                                     编辑
                                 </button>
                                 <a-popconfirm title="您确定要删除这条记录吗?" ok-text="确定" cancel-text="取消"
                                     @confirm="deleteItemFunc(record.code)" @cancel="handleCancel">
-                                    <button class="btn btn-sm btn-danger" style="margin-left: 1%;">
+                                    <button class="btn btn-sm btn-danger" style="margin-left: 0.75%;">
                                         删除
                                     </button>
                                 </a-popconfirm>
@@ -78,6 +85,7 @@
                     </label>
                     <!-- 输入框 -->
                     <a-input :disabled=column.disabled :value="currentDrawerData[column.value]"
+                        :placeholder=column.placeholder :maxlength=column.maxlength
                         @input="event => currentDrawerData[column.value] = event.target.value" :id="column.name" />
                 </div>
             </div>
@@ -188,7 +196,7 @@ const drawer_view_columns = ref();
 const drawer_add_view_columns = ref([
     { name: '机构名称', value: 'name' },
     { name: '父级编码', value: 'parentCode', disabled: true },
-    { name: '机构编码', value: 'code' },
+    { name: '机构编码', value: 'code' , placeholder: "请输入2位编码", maxlength: 2},
     { name: '排序', value: 'showOrder' },
 ]);
 
@@ -264,22 +272,24 @@ onMounted(() => {
 .title_region {
     padding: 16px;
 }
-
 /* 列表视图容器样式 */
 .list-view-container {
     display: flex;
     height: 94%;
+    background-color: #f0f2f5;
+    gap: 16px;
     padding: 16px;
     background-color: #f4f4f9;
 }
 
 /* 列表视图样式 */
 .list-view {
-    flex: 1;
+    width: 100%;
+    height: 100%;
     padding: 16px;
     background-color: #fff;
-    border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
     display: flex;
     flex-direction: column;
 }
@@ -297,32 +307,30 @@ onMounted(() => {
     border-bottom: 1px solid #e8e8e8;
 }
 
-/* 搜索控件样式 */
-.list-controls {
-    display: flex;
-    align-items: center;
-}
-
 .search-label {
     margin-right: 16px;
     font-weight: bold;
 }
 
+/* 列表控件样式 */
 .list-controls input {
     padding: 8px;
     border: 1px solid #e8e8e8;
     border-radius: 4px;
-    margin-right: 16px;
+    margin-right: 8px;
 }
 
-/* 操作按钮样式 */
-.action-buttons .btn {
-    margin-left: 8px;
+.list-controls .btn {
+    margin-right: 30px;
+}
+
+.list-controls .btn:hover {
+    background-color: #40a9ff;
 }
 
 /* 列表内容区域样式 */
 .list-content {
-    flex: 1;
+    flex-grow: 1;
     overflow-y: auto;
 }
 
@@ -330,7 +338,6 @@ onMounted(() => {
 .loading-spinner {
     display: flex;
     justify-content: center;
-    align-items: center;
     height: 100%;
 }
 
@@ -353,6 +360,31 @@ onMounted(() => {
         transform: rotate(360deg);
     }
 }
+/* 按钮样式 */
+.list-content .btn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.list-content .btn-info:hover {
+    background-color: #16e1c9;
+}
+
+.list-content .btn-warning:hover {
+    background-color: #f7ef12;
+}
+
+.list-content .btn-danger {
+    background-color: #ff4d4f;
+    color: #fff;
+}
+
+.list-content .btn-danger:hover {
+    background-color: #ff7875;
+}
+/* ====================================================列表样式end=============================================== */
 
 /* =========================================抽屉底部样式start===================================== */
 .drawer-content {
@@ -415,4 +447,12 @@ onMounted(() => {
 }
 
 /* =========================================抽屉底部样式end===================================== */
+/* 按钮样式 */
+.btn {
+    display: inline-flex;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
 </style>

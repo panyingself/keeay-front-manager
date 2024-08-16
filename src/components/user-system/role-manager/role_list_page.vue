@@ -17,10 +17,10 @@
             <div class="list-header">
                 <div class="list-controls">
                     <!-- 用户名搜索框 -->
-                    <a style="margin-right: 16px;">用户名</a>
+                    <label for="userNameSearch" class="search-label">机构名称</label>
                     <input type="text" v-model="userNameKeyword" placeholder="用户名搜索..." @input="searchData" />
                     <!-- 手机号搜索框 -->
-                    <a style="margin-right: 16px;">手机号</a>
+                    <label for="phoneSearch" class="search-label">机构编码</label>
                     <input type="text" v-model="phoneKeyword" placeholder="手机号搜索..." @input="searchData" />
                 </div>
                 <!-- 搜索按钮 -->
@@ -76,7 +76,8 @@
                                 <button class="btn btn-sm btn-warning" @click="doEditShowDrawer(record)">
                                     <i class="bi bi-pencil"></i> 编辑
                                 </button>
-                                <button class="btn btn-sm btn-danger" @click="deleteItem(record.id)" style="margin-left: 2%;">
+                                <button class="btn btn-sm btn-danger" @click="deleteItem(record.id)"
+                                    style="margin-left: 1.5%;">
                                     <i class="bi bi-trash"></i> 删除
                                 </button>
                             </td>
@@ -102,8 +103,7 @@
                             </label>
                             <!-- 非机构选择项的输入框 -->
                             <a-input v-show="column.value !== 'activeStatus' && column.value !== 'menuCodeList'"
-                                :value="currentDrawerData[column.value]"
-                                :disabled=column.disabled
+                                :value="currentDrawerData[column.value]" :disabled=column.disabled
                                 @input="event => currentDrawerData[column.value] = event.target.value"
                                 :id="column.name" />
                             <!--菜单权限select -->
@@ -158,7 +158,7 @@ const drawer_add_view_columns = ref([
 
 const drawer_edit_view_columns = ref([
     { name: '角色名称', value: 'roleName' },
-    { name: '角色编码', value: 'roleCode' , disabled: true},
+    { name: '角色编码', value: 'roleCode', disabled: true },
     { name: '菜单权限', value: 'menuCodeList' },
     { name: '备注', value: 'remark' },
 ]);
@@ -325,11 +325,10 @@ onMounted(async () => {
 .list-view-container {
     display: flex;
     height: 94%;
-    background-color: #f0f2f5;
-    gap: 16px;
     padding: 16px;
     background-color: #f4f4f9;
 }
+
 
 /* ====================================================列表样式start=============================================== */
 /* 列表视图样式 */
@@ -357,6 +356,17 @@ onMounted(async () => {
 }
 
 /* 列表控件样式 */
+/* 搜索控件样式 */
+.list-controls {
+    display: flex;
+    align-items: center;
+}
+
+.search-label {
+    margin-right: 16px;
+    font-weight: bold;
+}
+
 .list-controls input {
     padding: 8px;
     border: 1px solid #e8e8e8;
@@ -486,18 +496,12 @@ onMounted(async () => {
 .table .btn {
     padding: 4px 8px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
 }
 
-.table .btn-info {
-    background-color: #4ae36e;
-    color: #fff;
-    margin-right: 6px;
-}
-
-.table .btn-info:hover {
-    background-color: #40a9ff;
+.table .btn-warning:hover {
+    background-color: #f7ef12;
 }
 
 .table .btn-danger {
@@ -530,6 +534,7 @@ onMounted(async () => {
     cursor: pointer;
     transition: background-color 0.3s;
 }
+
 /* ====================================================列表样式end=============================================== */
 
 /* ====================================================抽屉样式start=============================================== */
@@ -613,5 +618,14 @@ onMounted(async () => {
 .drawer-footer .btn-save:hover {
     background-color: #005d00;
 }
+
 /* ====================================================抽屉样式end=============================================== */
+/* 按钮样式 */
+.btn {
+    display: inline-flex;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
 </style>

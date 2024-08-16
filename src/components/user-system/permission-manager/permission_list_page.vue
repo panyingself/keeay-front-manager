@@ -17,13 +17,13 @@
             <div class="list-header">
                 <div class="list-controls">
                     <!-- 权限名称搜索框 -->
-                    <a style="margin-right: 16px;">权限名称</a>
+                    <label style="margin-right: 16px;" class="search-label">权限名称</label>
                     <input type="text" v-model="permissionNameKeyword" placeholder="权限名称搜索..." @input="searchData" />
                     <!-- 权限编码搜索框 -->
-                    <a style="margin-right: 16px;">权限编码</a>
+                    <label style="margin-right: 16px;" class="search-label">权限编码</label>
                     <input type="text" v-model="permissionCodeKeyword" placeholder="权限编码搜索..." @input="searchData" />
                     <!-- 权限编码搜索框 -->
-                    <a style="margin-right: 16px;">uri匹配</a>
+                    <label style="margin-right: 16px;" class="search-label">uri匹配</label>
                     <input type="text" v-model="uriKeyword" placeholder="uri搜索..." @input="searchData" />
                 </div>
                 <!-- 搜索按钮 -->
@@ -63,12 +63,12 @@
                             </td>
                             <!-- 操作按钮 -->
                             <td>
-                                <button class="btn btn-sm btn-info" @click="doEditShowDrawer(item)">
+                                <button class="btn btn-sm btn-warning" @click="doEditShowDrawer(item)">
                                     <i class="bi bi-pencil"></i> 编辑
                                 </button>
                                 <a-popconfirm title="您确定要删除这条记录吗?" ok-text="确定" cancel-text="取消"
                                     @confirm="deleteItemFunc(item.permissionCode)" @cancel="handleCancel">
-                                    <button class="btn btn-sm btn-danger" style="margin-left: 5px;">
+                                    <button class="btn btn-sm btn-danger" style="margin-left: 4%;">
                                         删除
                                     </button>
                                 </a-popconfirm>
@@ -313,31 +313,24 @@ onMounted(async () => {
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    font-family: Arial, sans-serif;
-    /* 统一字体样式 */
-    font-size: 14px;
-    /* 统一字体大小 */
-    line-height: 1.5;
-    /* 统一行高 */
 }
 
 /* 列表头部样式 */
 .list-header {
     display: flex;
     justify-content: space-between;
-    align-permissionDataList: center;
+    align-items: center;
     padding: 16px;
     background-color: #f5f5f5;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     margin-bottom: 16px;
     border-bottom: 1px solid #e8e8e8;
-    font-family: Arial, sans-serif;
-    /* 统一字体样式 */
-    font-size: 14px;
-    /* 统一字体大小 */
-    line-height: 1.5;
-    /* 统一行高 */
+}
+
+.search-label {
+    margin-right: 16px;
+    font-weight: bold;
 }
 
 /* 列表控件样式 */
@@ -360,14 +353,12 @@ onMounted(async () => {
 .list-content {
     flex-grow: 1;
     overflow-y: auto;
-    margin-top: 16px;
 }
 
 /* 加载动画样式 */
 .loading-spinner {
     display: flex;
     justify-content: center;
-    align-permissionDataList: center;
     height: 100%;
 }
 
@@ -406,6 +397,17 @@ onMounted(async () => {
     border-bottom: 1px solid #e8e8e8;
 }
 
+/* 将操作列的标题和内容居中对齐 */
+.table th:last-child,
+.table td:last-child {
+    text-align: center; /* 水平居中对齐 */
+}
+
+/* 为操作列的按钮设置样式，使其更加整齐 */
+.table td:last-child .btn {
+    margin: 0 4px; /* 按钮之间的间距 */
+}
+
 /* 设置光标样式 */
 .table th,
 .table td {
@@ -432,18 +434,12 @@ onMounted(async () => {
 .table .btn {
     padding: 4px 8px;
     border: none;
-    border-radius: 4px;
+    border-radius: 6px;
     cursor: pointer;
 }
 
-.table .btn-info {
-    background-color: #4ae36e;
-    color: #fff;
-    margin-right: 6px;
-}
-
-.table .btn-info:hover {
-    background-color: #40a9ff;
+.table .btn-warning:hover {
+    background-color: #f7ef12;
 }
 
 .table .btn-danger {
@@ -539,7 +535,6 @@ onMounted(async () => {
 /* 按钮样式 */
 .btn {
     display: inline-flex;
-    align-permissionDataList: center;
     padding: 0.5rem 1rem;
     font-size: 1rem;
     border-radius: 0.25rem;

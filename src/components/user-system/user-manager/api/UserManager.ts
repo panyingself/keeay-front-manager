@@ -33,4 +33,9 @@ export const changeEnable = (params) => {
     return ajax_post("keeay-user", "/keeay-user/api/userinfo/changeEnable", params);
 }
 
+// 重置用户密码信息
+export const resetLoginPwd = (params) => {
+    return ajax_post("keeay-user", "/keeay-user/api/userinfo/resetPassword", params);
+}
+
 

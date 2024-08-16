@@ -17,12 +17,12 @@
             <div class="list-header">
                 <div class="list-controls">
                     <!-- 菜单名称搜索框 -->
-                    <label for="menuNameSearch">菜单名称</label>
+                    <label for="menuNameSearch" class="search-label">菜单名称</label>
                     <input type="text" id="menuNameSearch" v-model="userNameKeyword" placeholder="菜单名称搜索..."
                         @input="searchData" />
 
                     <!-- 菜单编码搜索框 -->
-                    <label for="menuCodeSearch">菜单编码</label>
+                    <label for="menuCodeSearch" class="search-label">菜单编码</label>
                     <input type="text" id="menuCodeSearch" v-model="phoneKeyword" placeholder="菜单编码搜索..."
                         @input="searchData" />
                 </div>
@@ -53,15 +53,15 @@
                     <template #bodyCell="{ column, record }">
                         <template v-if="column.key === 'action'">
                             <span>
-                                <button class="btn btn-sm btn-success" @click="doAddShowDrawer(record)">
+                                <button class="btn btn-sm btn-info" @click="doAddShowDrawer(record)">
                                     新增
                                 </button>
-                                <button class="btn btn-sm btn-warning" @click="doEditShowDrawer(record)" style="margin-left: 1%;">
+                                <button class="btn btn-sm btn-warning" @click="doEditShowDrawer(record)" style="margin-left: 0.75%;">
                                     编辑
                                 </button>
                                 <a-popconfirm title="您确定要删除这条记录吗?" ok-text="确定" cancel-text="取消"
                                     @confirm="deleteItem(record)" @cancel="handleCancel">
-                                    <button class="btn btn-sm btn-danger" style="margin-left: 1%;">
+                                    <button class="btn btn-sm btn-danger" style="margin-left: 0.75%;">
                                         删除
                                     </button>
                                 </a-popconfirm>
@@ -138,21 +138,21 @@ const filterOption = (inputValue, option) => {
 }
 
 const drawer_add_view_columns = ref([
-    { name: '菜单名称', value: 'menuName', iconFlag: true, disabled: false },
-    { name: '父级编码', value: 'parentMenuCode', iconFlag: false, disabled: true },
-    { name: '菜单编码', value: 'menuCode', iconFlag: false, disabled: false, placeholder: "请输入2位编码", maxlength: 2 },
-    { name: '权限资源', value: 'permissionList', iconFlag: false, disabled: false },
-    { name: '菜单类型', value: 'type', iconFlag: false, disabled: false },
-    { name: '排序', value: 'sort', iconFlag: false, disabled: false }
+    { name: '菜单名称', value: 'menuName', disabled: false },
+    { name: '父级编码', value: 'parentMenuCode', disabled: true },
+    { name: '菜单编码', value: 'menuCode', disabled: false, placeholder: "请输入2位编码", maxlength: 2 },
+    { name: '权限资源', value: 'permissionList', disabled: false },
+    { name: '菜单类型', value: 'type', disabled: false },
+    { name: '排序', value: 'sort', disabled: false }
 ]);
 
 const drawer_edit_view_columns = ref([
-    { name: '菜单名称', value: 'menuName', iconFlag: true, disabled: false },
-    { name: '父级编码', value: 'parentMenuCode', iconFlag: false, disabled: true },
-    { name: '菜单编码', value: 'menuCode', iconFlag: false, disabled: true, placeholder: "请输入2位编码" },
-    { name: '资源权限', value: 'permissionList', iconFlag: false, disabled: false },
-    { name: '排序', value: 'sort', iconFlag: false, disabled: false },
-    { name: '类型', value: 'type', iconFlag: false, disabled: false },
+    { name: '菜单名称', value: 'menuName', disabled: false },
+    { name: '父级编码', value: 'parentMenuCode', disabled: true },
+    { name: '菜单编码', value: 'menuCode', disabled: true, placeholder: "请输入2位编码" },
+    { name: '资源权限', value: 'permissionList', disabled: false },
+    { name: '排序', value: 'sort', disabled: false },
+    { name: '类型', value: 'type', disabled: false },
 ]);
 
 const doAddRootShowDrawer = () => {
@@ -255,13 +255,6 @@ const list_view_columns = ref(
         },
     ]
 );
-// [
-//     { name: '菜单名称', value: 'menuName', iconFlag: true },
-//     { name: '菜单编码', value: 'menuCode', iconFlag: false },
-//     { name: '排序', value: 'sort', iconFlag: false },
-//     { name: '类型', value: 'typeDesc', iconFlag: false },
-// ]
-
 const userNameKeyword = ref(''); // 菜单名称搜索关键词
 const phoneKeyword = ref(''); // 菜单编码搜索关键词
 const menuDataList = ref([]); // 列表数据
@@ -327,8 +320,6 @@ const deleteItem = async (item) => {
     fetchMenuListData();
 };
 // ==================================================列表js逻辑结束====================================================
-
-
 // 页面挂载后获取菜单列表数据
 onMounted(async () => {
     fetchMenuListData();
@@ -367,12 +358,18 @@ onMounted(async () => {
 .list-header {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     padding: 16px;
     background-color: #f5f5f5;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     margin-bottom: 16px;
     border-bottom: 1px solid #e8e8e8;
+}
+
+.search-label {
+    margin-right: 16px;
+    font-weight: bold;
 }
 
 /* 列表控件样式 */
@@ -423,6 +420,32 @@ onMounted(async () => {
         transform: rotate(360deg);
     }
 }
+
+/* 按钮样式 */
+.list-content .btn {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.list-content .btn-info:hover {
+    background-color: #16e1c9;
+}
+
+.list-content .btn-warning:hover {
+    background-color: #f7ef12;
+}
+
+.list-content .btn-danger {
+    background-color: #ff4d4f;
+    color: #fff;
+}
+
+.list-content .btn-danger:hover {
+    background-color: #ff7875;
+}
+
 
 /* =========================================抽屉底部样式start===================================== */
 .drawer-content {
@@ -485,4 +508,12 @@ onMounted(async () => {
 }
 
 /* =========================================抽屉底部样式end===================================== */
+/* 按钮样式 */
+.btn {
+    display: inline-flex;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
 </style>

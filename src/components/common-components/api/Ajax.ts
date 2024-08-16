@@ -9,9 +9,9 @@ function getBaseURL(project) {
     // if (project == "keeay-user") {
     //     return "http://localhost:8089/keeay-user";
     // }
-    // if (project == "keeay-auth") {
-    //     return "http://localhost:8087/keeay-auth";
-    // }
+    if (project === "keeay-auth") {
+        return "http://localhost:8087/";
+    }
     // return "http://localhost:8087/keeay-auth";
     return http_request_prefix;
 }
@@ -68,9 +68,6 @@ export async function ajax_get_blob(project, url, params) {
             resolve(response);
             const reader = new FileReader();
             reader.readAsDataURL(response.data);
-            reader.onload = () => {
-                this.qrCodeUrl = reader.result;
-            };
         } catch (error) {
             console.error('Error fetching QR code:', error);
             alert('获取二维码时异常，请联系管理员重置');
@@ -105,13 +102,14 @@ export function ajax_post(project, url, params) {
             resolve(response);
         } catch (error) {
             console.error('Error fetching data:', error);
-            if (error.response && error.response.data.code === 401) {
-                alert("用户登录已过期，请重新登录");
-                loginStore.clearData();
-                router.push({ path: '/login_page' });
-            } else {
-                reject(error);
-            }
+            // if (error.response && error.response.data.code === 401) {
+            //     alert("用户登录已过期，请重新登录");
+            //     loginStore.clearData();
+            //     router.push({ path: '/manager_center_page' });
+            //     // router.push({ path: '/login_page' });
+            // } else {
+            //     reject(error);
+            // }
         }
     });
 }
