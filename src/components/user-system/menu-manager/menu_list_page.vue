@@ -53,7 +53,7 @@
                     <template #bodyCell="{ column, record }">
                         <template v-if="column.key === 'action'">
                             <span>
-                                <button class="btn btn-sm btn-info" @click="doAddShowDrawer(record)">
+                                <button v-show="record.type === 0 || record.type ===1" class="btn btn-sm btn-info" @click="doAddShowDrawer(record)">
                                     新增
                                 </button>
                                 <button class="btn btn-sm btn-warning" @click="doEditShowDrawer(record)" style="margin-left: 0.75%;">
@@ -110,7 +110,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { addMenuInfo, deleteMenuInfo, editMenuInfo, getMenuByCode, getMenuList } from './api/MenuManager';
+import { addMenuInfo, editMenuInfo, getMenuByCode, getMenuList, removeMenuInfo } from './api/MenuManager';
 import { getPermissionList } from '../permission-manager/api/PermissionManager';
 import { message } from 'ant-design-vue';
 
@@ -243,11 +243,17 @@ const list_view_columns = ref(
             key: 'menuCode',
         },
         {
+            title: '排序',
+            key: 'sort',
+            dataIndex: 'sort'
+        },
+        {
             title: '类型',
             key: 'typeDesc',
             dataIndex: 'typeDesc',
             align: 'center'
         },
+
         {
             title: '操作',
             key: 'action',
@@ -312,7 +318,7 @@ const deleteItem = async (item) => {
     const params = {
         menuCode: item.menuCode
     }
-    const response = await deleteMenuInfo(params);
+    const response = await removeMenuInfo(params);
     if (response.data.code !== 200) {
         window.alert(response.data.message);
         return;

@@ -24,7 +24,12 @@ export const editRoleInfo = (params) => {
     return ajax_post("keeay-user", "/keeay-user/api/role/info/editById", params);
 }
 
-// 编辑用户信息
+// 编辑角色信息
 export const changeEnable = (params) => {
     return ajax_post("keeay-user", "/keeay-user/api/role/info/changeEnable", params);
+}
+
+// 删除角色信息
+export const removeByRoleCode = (params) => {
+    return ajax_post("keeay-user", "/keeay-user/api/role/info/removeByCode", params);
 }

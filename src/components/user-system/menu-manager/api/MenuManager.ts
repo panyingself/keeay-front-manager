@@ -21,6 +21,6 @@ export const editMenuInfo = (params) => {
 }
 
 // 编辑菜单
-export const deleteMenuInfo = (params) => {
-    return ajax_post("keeay-user", "/keeay-user/api/menu/info/deleteByCode", params);
+export const removeMenuInfo = (params) => {
+    return ajax_post("keeay-user", "/keeay-user/api/menu/info/removeByCode", params);
 }
