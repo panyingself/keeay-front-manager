@@ -5,7 +5,7 @@ export const fetchMfaQrCodeUrl = (params) => {
     return ajax_get_blob("keeay-auth","/keeay-auth/api/mfa/generate-qr", params);
 }
 
-// 获取组织结构
+// 验证otpCode
 export const verifyOtpCode = (params) => {
     return ajax_post("keeay-auth","/keeay-auth/api/mfa/verify-otp", params);
 }

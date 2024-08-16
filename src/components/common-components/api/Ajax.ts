@@ -58,11 +58,15 @@ export function ajax_get(project, url, params) {
 
 // 获取二维码图片(文件类型)
 export async function ajax_get_blob(project, url, params) {
+    const loginStore = useLoginUserStore(); // 确保这里是正确的 store
     return new Promise(async (resolve) => {
         try {
             const response = await axios.get(url, {
                 baseURL: getBaseURL(project),
                 params: params,
+                headers: {
+                    "Authorization": loginStore.jwt as String // 移除 as string
+                },
                 responseType: 'blob' // 重要：将响应类型设置为 blob
             });
             resolve(response);
