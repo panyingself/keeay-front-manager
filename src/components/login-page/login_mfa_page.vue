@@ -78,6 +78,7 @@ import { useRouter } from 'vue-router';  // 导入 useRouter 用于页面导航
 import { useLoginUserStore } from '@/components/common-components/data-store/UserLogin';  // 导入用户登录数据存储
 import { ref } from 'vue';
 import { fetchMfaQrCodeUrl, verifyDeviceCode, verifyOtpCode } from './api/MfaManager';
+import { message } from 'ant-design-vue';
 
 const showCodeSection = ref(0); // 控制显示认证码输入部分还是二维码绑定部分
 const otpCode = ref(""); // 认证码的响应式数据属性
@@ -128,12 +129,12 @@ const submitOptCodeFunc = async () => {
             router.push({ path: '/manager_center_page' });
         } else {
             // 认证失败时提示用户
-            alert('认证码无效，请重试');
+            message.error('认证码无效，请重试', 2);
         }
     } catch (error) {
         // 处理认证过程中的错误
         console.error('验证时出错:', error);
-        alert('验证时出错，请重试');
+        message.error('验证时出错，请重试', 2);
     }
 }
 
@@ -152,12 +153,12 @@ const submitBindVerifyCodeFunc = async () => {
             changeShowCodeSectionFunc("qrCode");
         } else {
             // 认证失败时提示用户
-            alert('认证码无效，请重试');
+            message.error('绑定码无效,请重试');
         }
     } catch (error) {
         // 处理认证过程中的错误
         console.error('验证时出错:', error);
-        alert('验证时出错，请重试');
+        message.error('绑定码无效,请重试');
     }
 }
 

@@ -114,7 +114,7 @@
                                     密码重置
                                 </button>
                                 <a-popconfirm title="确定要重置MFA设备吗?" ok-text="Yes" cancel-text="No"
-                                    @confirm="resetMfaFunc">
+                                    @confirm="resetMfaFunc(userData)">
                                     <button class="btn btn-sm btn-warning" style="margin-left: 2.5%;">
                                         MFA重置
                                     </button>
@@ -183,7 +183,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import Pagination from '@/components/common-components/pagenation.vue';
-import { addUserInfo, changeEnable, editUserInfo, getOrganizationList, getUserInfoList, removeByUserCode, resetLoginPwd } from '@/components/user-system/user-manager/api/UserManager';
+import { addUserInfo, changeEnable, editUserInfo, getOrganizationList, getUserInfoList, removeByUserCode, resetLoginPwd, resetMfaData } from '@/components/user-system/user-manager/api/UserManager';
 import { getAllRoleList } from '../role-manager/api/RoleManager';
 import { message, Modal } from 'ant-design-vue';
 import { h } from 'vue';
@@ -344,7 +344,7 @@ const pageSize = ref(10); // 初始化每页显示10条
 const open = ref(false);
 
 const showModal = () => {
-  open.value = true;
+    open.value = true;
 };
 
 
@@ -362,8 +362,15 @@ const dataEnableFunc = async (userData) => {
     }
 }
 
-const resetMfaFunc = () => {
-    success();
+// 重置MFA绑定码
+const resetMfaFunc = async (userData) => {
+    const params = { "userCode": userData.userCode };
+    const response = await resetMfaData(params);
+    if (response.data.code === 200) {
+        message.success("重置MFA绑定码成功,绑定码 : " + response.data.data, 2)
+        return;
+    }
+    message.error("重置MFA绑定码失败 : " + response.data.message, 2);
 };
 
 const success = () => {
@@ -375,7 +382,7 @@ const success = () => {
             h('p', 'some messages...some messages...'),
             h('p', 'some messages...some messages...'),
         ]),
-        closable : true,
+        closable: true,
         onOk: () => {
             // 确保 onOk 不返回任何内容，也不需要返回 Promise
             console.log("Modal closed");

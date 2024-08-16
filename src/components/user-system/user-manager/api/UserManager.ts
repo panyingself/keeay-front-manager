@@ -38,4 +38,9 @@ export const resetLoginPwd = (params) => {
     return ajax_post("keeay-user", "/keeay-user/api/userinfo/resetPassword", params);
 }
 
+// 重置用户密码信息
+export const resetMfaData = (params) => {
+    return ajax_post("keeay-auth", "/keeay-auth/api/mfa/bindCode/info/generateCode", params);
+}
+
 
