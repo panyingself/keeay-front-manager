@@ -80,6 +80,9 @@
                                     style="margin-left: 1.5%;">
                                     <i class="bi bi-trash"></i> 删除
                                 </button>
+                                <button class="btn btn-sm btn-success" @click="showModal" style="margin-left: 1.5%;">
+                                    <i class="bi bi-trash"></i> 查看用户
+                                </button>
                             </td>
                         </tr>
                     </transition-group>
@@ -128,6 +131,71 @@
                     </div>
                 </a-drawer>
             </div>
+
+            <!-- 模态框组件 -->
+            <template>
+                <div>
+                    <a-modal v-model:visible="modalShowVisibale" width="65%" hight = "50%" title="Basic Modal" @ok="handleOk">
+                        <!-- 列表内容区域 -->
+                        <div class="list-content">
+                            <!-- 加载状态指示器 -->
+                            <div v-if="loading" class="loading-spinner"></div>
+                            <!-- 列表表格 -->
+                            <table v-else class="table">
+                                <thead>
+                                    <tr>
+                                        <!-- 表头 -->
+                                        <th v-for="column in list_view_columns" :key="column.name">{{ column.name }}
+                                        </th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <transition-group name="fade" tag="tbody">
+                                    <tr v-for="record in recordDataList" :key="record.id" class="table-row">
+                                        <!-- 表格数据 -->
+                                        <td v-for="column in list_view_columns" :key="column.value">
+                                            <template v-if="column.value == 'activeStatus'">
+                                                <!-- @click="handleConfirm"  -->
+                                                <a-popconfirm title="确定要改变激活状态吗?" ok-text="Yes" cancel-text="No"
+                                                    @confirm="dataEnableFunc(record)" @cancel="handleCancel">
+                                                    <div style="position: relative;">
+                                                        <a-switch v-model:checked="record[column.value]"
+                                                            :unCheckedValue="0" :checkedValue="1" checked-children="启用"
+                                                            un-checked-children="禁用" />
+                                                        <div style="position: absolute;inset: 0;"></div>
+                                                    </div>
+                                                </a-popconfirm>
+                                            </template>
+                                            <template v-else>
+                                                {{ record[column.value] }}
+                                            </template>
+                                        </td>
+                                        <!-- 操作按钮 -->
+                                        <td>
+                                            <button class="btn btn-sm btn-warning" @click="doEditShowDrawer(record)">
+                                                <i class="bi bi-pencil"></i> 编辑
+                                            </button>
+                                            <button class="btn btn-sm btn-danger"
+                                                @click="deleteItemFunc(record.roleCode)" style="margin-left: 1.5%;">
+                                                <i class="bi bi-trash"></i> 删除
+                                            </button>
+                                            <button class="btn btn-sm btn-success" @click="showModal"
+                                                style="margin-left: 1.5%;">
+                                                <i class="bi bi-trash"></i> 查看用户
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </transition-group>
+                            </table>
+                        </div>
+                        <!-- 列表分页脚标 -->
+                        <div class="list-footer">
+                            <pagination :totalCount="totalCount" :currentPage="currentPage" :pageSize="pageSize"
+                                @change="handlePageChangeFunc" @update:pageSize="handlePageSizeChangeFunc" />
+                        </div>
+                    </a-modal>
+                </div>
+            </template>
         </div>
     </div>
 </template>
@@ -139,8 +207,14 @@ import { addRoleInfo, changeEnable, editRoleInfo, fetchRoleDetailByCode, getRole
 import { getMenuList } from '../menu-manager/api/MenuManager';
 import { message } from 'ant-design-vue';
 
-// 用于控制一些标志状态的变量
-const flag = ref(true);
+// ==================================================模态框js逻辑开始====================================================
+const modalShowVisibale = ref(false);
+
+const showModal = () => {
+    modalShowVisibale.value = !modalShowVisibale.value;
+}
+
+// ==================================================模态框js逻辑结束====================================================
 
 // ==================================================抽屉js逻辑开始====================================================
 // 抽屉组件

@@ -4,7 +4,7 @@
         <nav class="navbar navbar-expand-lg navbar-light">
             <div class="container-fluid">
                 <!-- 导航栏品牌名称 -->
-                <a class="navbar-brand" href="#">用户管理中台</a>
+                <a class="navbar-brand" href="#" @click="toManagerCenterSystem">用户管理中台</a>
                 <!-- 导航栏折叠按钮（用于响应式设计） -->
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                     aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -24,11 +24,12 @@
                                     <!-- 用户名 -->
                                     <span class="username">超级管理员</span>
                                     <!-- 用户描述 -->
-                                    <span class="description">潘滢,欢迎您</span>
+                                    <span class="description">{{ loginUserName }},欢迎您</span>
                                 </div>
                             </div>
                             <!-- 下拉菜单 -->
-                            <ul class="dropdown-menu dropdown-menu-end" :class="{ show: isDropdownOpen }" aria-labelledby="navbarDropdown">
+                            <ul class="dropdown-menu dropdown-menu-end" :class="{ show: isDropdownOpen }"
+                                aria-labelledby="navbarDropdown">
                                 <!-- 个人资料项 -->
                                 <li><a class="dropdown-item dropdown-item-link-py" href="#">个人资料</a></li>
                                 <!-- 分隔线 -->
@@ -50,28 +51,28 @@
             <!-- 左侧菜单栏 -->
             <nav class="sidebar">
                 <!-- 如果菜单项数组不为空，展示菜单 -->
-                <ul v-if="menuItems.length > 0" class="nav flex-column">
-                    <template v-for="item in menuItems">
+                <ul v-if="menuDataList.length > 0" class="nav flex-column">
+                    <template v-for="menuData in menuDataList">
                         <!-- 用户中台部分 -->
-                        <template v-if="item.menuCode == 10">
+                        <template v-if="menuData.menuCode == 10">
                             <!-- 忽略首层(用户中台本身) -->
-                            <li v-for="itemChildren in item.children" class="nav-item">
+                            <li v-for="menuDataChildren in menuData.children" class="nav-item">
                                 <!-- 判断是否为目录 -->
-                                <template v-if="!itemChildren.type">
+                                <template v-if="menuDataChildren.type === 0">
                                     <!-- 展示为目录项，点击可展开子菜单 -->
                                     <a class="nav-link collapsed" href="#" data-bs-toggle="collapse"
-                                        :data-bs-target="'#submenu' + itemChildren.id" aria-expanded="false"
-                                        :aria-controls="'submenu' + itemChildren.id">{{ itemChildren.menuName }}
+                                        :data-bs-target="'#submenu' + menuDataChildren.id" aria-expanded="false"
+                                        :aria-controls="'submenu' + menuDataChildren.id">{{ menuDataChildren.menuName }}
                                     </a>
                                     <!-- 如果有子菜单，展示子菜单 -->
-                                    <div v-if="itemChildren.children && itemChildren.children.length > 0"
-                                        class="collapse submenu" :id="'submenu' + itemChildren.id">
+                                    <div v-if="menuDataChildren.children && menuDataChildren.children.length > 0"
+                                        class="collapse submenu" :id="'submenu' + menuDataChildren.id">
                                         <ul class="nav flex-column">
-                                            <li v-for="subItem in itemChildren.children" class="nav-item">
+                                            <li v-for="subMenuData in menuDataChildren.children" class="nav-item">
                                                 <!-- 子菜单项 -->
                                                 <a class="nav-link" href="#"
-                                                    @click="changeContent(subItem.menuName, 'user_system_index_page')">
-                                                    {{ subItem.menuName }}
+                                                    @click="changeContent(subMenuData.menuName, 'user_system_index_page')">
+                                                    {{ subMenuData.menuName }}
                                                 </a>
                                             </li>
                                         </ul>
@@ -80,8 +81,8 @@
                                 <!-- 否则展示为普通菜单项 -->
                                 <template v-else>
                                     <a class="nav-link" href="#"
-                                        @click="changeContent(itemChildren.menuName, 'user_system_index_page')">
-                                        {{ itemChildren.menuName }}
+                                        @click="changeContent(menuDataChildren.menuName, 'user_system_index_page')">
+                                        {{ menuDataChildren.menuName }}
                                     </a>
                                 </template>
                             </li>
@@ -92,9 +93,9 @@
 
             <!-- 内容区域 -->
             <div class="content">
-                <!-- 动态组件，根据当前视图展示不同内容 -->
                 <component :is="currentView" />
             </div>
+
         </div>
 
         <!-- 底部导航栏 -->
@@ -116,11 +117,13 @@ import User_system_index_page from '@/components/user-system/index/user_system_i
 import { useRouter } from 'vue-router';
 import Permission_list_page from '@/components/user-system/permission-manager/permission_list_page.vue';
 
-const menuItems = ref([]); // 存储菜单项的数组
+const menuDataList = ref([]); // 存储菜单项的数组
 const currentView = ref(User_system_index_page); // 当前展示的视图组件
 const isDropdownOpen = ref(false); // 控制下拉菜单的显示状态
-
+const loginUserName = ref('');
 const router = useRouter();
+const loginStore = useLoginUserStore(); // 获取登录用户信息
+
 
 // 退出操作
 const loginOut = () => {
@@ -128,17 +131,26 @@ const loginOut = () => {
     router.push("/");
 }
 
+// 退出操作
+const toManagerCenterSystem = () => {
+    // 执行退出操作并跳转到登录页
+    // router.push("/manager_center_page");
+    router.push("/user-center-manager/Menu_list_page");
+
+}
+
 // 加载菜单数据
 const loadMenuData = async () => {
     try {
-        const loginStore = useLoginUserStore(); // 获取登录用户信息
+        // 查询用户拥有的目录/菜单权限(tree结构)
+        // 根据用户
         const response = await axios.post('http://localhost:8089/keeay-user/api/menu/info/getTreeList', {}, {
             headers: {
                 "Authorization": loginStore.jwt // 添加授权头
             }
         });
         if (response.data.code == '200') {
-            menuItems.value = response.data.data; // 设置菜单数据
+            menuDataList.value = response.data.data; // 设置菜单数据
         } else {
             alert("获取菜单权限失败"); // 获取菜单失败提示
         }
@@ -163,6 +175,7 @@ const handleClickOutside = (event) => {
 
 // 组件挂载时添加点击事件监听器
 onMounted(() => {
+    loginUserName.value = loginStore.userName;
     document.addEventListener('click', handleClickOutside);
 });
 
@@ -173,22 +186,22 @@ onUnmounted(() => {
 
 // 动态改变内容区域展示的组件
 const changeContent = (menuName, url) => {
-    if (menuName == "首页") {
+    if (menuName === "首页") {
         currentView.value = User_system_index_page;
     }
-    if (menuName == "用户管理") {
+    if (menuName === "用户管理") {
         currentView.value = user_list_view;
     }
-    if (menuName == "组织管理") {
+    if (menuName === "组织管理") {
         currentView.value = organization_list_page_view;
     }
-    if (menuName == "角色管理") {
+    if (menuName === "角色管理") {
         currentView.value = role_list_page_view;
     }
-    if (menuName == "菜单管理") {
+    if (menuName === "菜单管理") {
         currentView.value = menu_list_page_view;
     }
-    if (menuName == "权限管理") {
+    if (menuName === "权限管理") {
         currentView.value = Permission_list_page;
     }
 };
@@ -316,50 +329,68 @@ const toggleDropdown = () => {
     display: flex;
     align-items: center;
     position: relative;
-    margin-right: 1.5%; /* 头像容器距离左侧1.5% */
-    cursor: pointer; /* 添加光标效果 */
+    margin-right: 1.5%;
+    /* 头像容器距离左侧1.5% */
+    cursor: pointer;
+    /* 添加光标效果 */
 }
 
 /* 头像样式 */
 .avatar-container img {
     width: 50px;
     height: 50px;
-    border-radius: 50%; /* 圆形头像 */
-    animation: rotate 4s linear infinite; /* 一直旋转 */
+    border-radius: 50%;
+    /* 圆形头像 */
+    animation: rotate 4s linear infinite;
+    /* 一直旋转 */
 }
 
 /* 头像和描述信息容器 */
 .avatar-info {
     display: flex;
     flex-direction: column;
-    margin-left: 15px; /* 头像和描述之间的间距 */
-    position: relative; /* 相对定位，确保描述信息紧随头像 */
+    margin-left: 15px;
+    /* 头像和描述之间的间距 */
+    position: relative;
+    /* 相对定位，确保描述信息紧随头像 */
 }
 
 /* 用户名样式 */
 .username {
-    font-weight: bold; /* 字体加粗 */
-    width: 8em; /* 固定宽度，适应8个字符 */
-    white-space: nowrap; /* 防止文字换行 */
-    overflow: hidden; /* 隐藏超出部分 */
-    text-overflow: ellipsis; /* 使用省略号表示超出部分 */
+    font-weight: bold;
+    /* 字体加粗 */
+    width: 8em;
+    /* 固定宽度，适应8个字符 */
+    white-space: nowrap;
+    /* 防止文字换行 */
+    overflow: hidden;
+    /* 隐藏超出部分 */
+    text-overflow: ellipsis;
+    /* 使用省略号表示超出部分 */
 }
 
 /* 描述样式 */
 .description {
-    font-size: 0.8rem; /* 描述字体大小 */
-    width: 8em; /* 固定宽度，适应8个字符 */
-    white-space: nowrap; /* 防止文字换行 */
-    overflow: hidden; /* 隐藏超出部分 */
-    text-overflow: ellipsis; /* 使用省略号表示超出部分 */
+    font-size: 0.8rem;
+    /* 描述字体大小 */
+    width: 8em;
+    /* 固定宽度，适应8个字符 */
+    white-space: nowrap;
+    /* 防止文字换行 */
+    overflow: hidden;
+    /* 隐藏超出部分 */
+    text-overflow: ellipsis;
+    /* 使用省略号表示超出部分 */
 }
 
 /* 下拉菜单样式 */
 .dropdown-menu {
-    display: none; /* 默认隐藏 */
+    display: none;
+    /* 默认隐藏 */
     position: absolute;
     right: 0;
-    top: 60px; /* 调整位置以避免覆盖头像 */
+    top: 60px;
+    /* 调整位置以避免覆盖头像 */
     background-color: #fff;
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -378,6 +409,7 @@ const toggleDropdown = () => {
     from {
         transform: rotate(0deg);
     }
+
     to {
         transform: rotate(360deg);
     }

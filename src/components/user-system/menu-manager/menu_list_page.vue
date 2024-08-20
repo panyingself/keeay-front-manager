@@ -141,8 +141,10 @@ const drawer_add_view_columns = ref([
     { name: '菜单名称', value: 'menuName', disabled: false },
     { name: '父级编码', value: 'parentMenuCode', disabled: true },
     { name: '菜单编码', value: 'menuCode', disabled: false, placeholder: "请输入2位编码", maxlength: 2 },
+    { name: '路由地址', value: 'path', disabled: false},
     { name: '权限资源', value: 'permissionList', disabled: false },
     { name: '菜单类型', value: 'type', disabled: false },
+    { name: '菜单描述', value: 'description', disabled: false },
     { name: '排序', value: 'sort', disabled: false }
 ]);
 
@@ -150,9 +152,11 @@ const drawer_edit_view_columns = ref([
     { name: '菜单名称', value: 'menuName', disabled: false },
     { name: '父级编码', value: 'parentMenuCode', disabled: true },
     { name: '菜单编码', value: 'menuCode', disabled: true, placeholder: "请输入2位编码" },
+    { name: '路由地址', value: 'path', disabled: false},
     { name: '资源权限', value: 'permissionList', disabled: false },
+    { name: '菜单类型', value: 'type', disabled: false },
+    { name: '菜单描述', value: 'description', disabled: false },
     { name: '排序', value: 'sort', disabled: false },
-    { name: '类型', value: 'type', disabled: false },
 ]);
 
 const doAddRootShowDrawer = () => {

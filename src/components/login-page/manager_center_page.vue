@@ -37,18 +37,19 @@
                 <h1 id="pageTitle">欢迎来到管理后台</h1>
                 <p id="pageContent">请选择下面的子系统进入：</p>
                 <div class="container-fluid">
-                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4">
+                    <div v-for="userMenuData in userMenuDataList"
+                        class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-4">
                         <!-- 中台子系统卡片 -->
                         <div class="col">
                             <div class="card">
                                 <div class="card-body">
-                                    <h5 class="card-title">用户管理中台</h5>
-                                    <p class="card-text">用户统一管理中心</p>
-                                    <a href="#" @click="toChildrenSystem(1)" class="btn btn-primary">进入</a>
+                                    <h5 class="card-title"> {{ userMenuData.menuName }}</h5>
+                                    <p class="card-text">{{ userMenuData.description }}</p>
+                                    <a href="#" @click="toManagerCenterSystem(userMenuData.path)" class="btn btn-primary">进入</a>
                                 </div>
                             </div>
                         </div>
-                        <div class="col">
+                        <!-- <div class="col">
                             <div class="card">
                                 <div class="card-body">
                                     <h5 class="card-title">客户交互中台</h5>
@@ -84,7 +85,6 @@
                                 </div>
                             </div>
                         </div>
-                        <!-- 你可以根据需要添加更多卡片 -->
                         <div class="col">
                             <div class="card">
                                 <div class="card-body">
@@ -93,7 +93,7 @@
                                     <a href="#" @click="toChildrenSystem(6)" class="btn btn-primary">进入</a>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div>
@@ -107,25 +107,35 @@
 </template>
 
 
-<script>
+<script setup>
 import { useRouter } from 'vue-router';
+import { fetchUserMenuTreeList } from './api/LoginPage';
+import { onMounted, ref } from 'vue';
 
-export default {
-    setup() {
-        const router = useRouter();
-        return { router };
-    },
-    methods: {
-        //定义点击跳转事件
-        async toChildrenSystem(systemId) {
-            if (systemId == 1) {
-                this.router.push('/user_system_main_page');
-            } else {
-                alert('敬请期待');
-            }
-        }
+// 使用 Vue Router 的 useRouter 函数来获取路由对象
+const router = useRouter();
+const userMenuDataList = ref([]);
+
+// 加载用户权限菜单
+const fetchUserMenuListFunc = async () => {
+    const response = await fetchUserMenuTreeList();
+    // 加载权限菜单树
+    if (response.data.code === 200) {
+        userMenuDataList.value = response.data.data;
+        console.log(userMenuDataList);
     }
 }
+
+const toManagerCenterSystem = (routerUrl) => {
+    // router.push('/user_system_main_page');
+    router.push({ path: routerUrl });
+
+}
+
+// 组件挂载时添加点击事件监听器
+onMounted(() => {
+    fetchUserMenuListFunc();
+});
 
 
 </script>
