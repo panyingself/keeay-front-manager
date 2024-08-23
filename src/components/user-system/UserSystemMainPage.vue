@@ -186,7 +186,7 @@ onUnmounted(() => {
 
 // 动态改变内容区域展示的组件
 const changeContent = (menuName, url) => {
-    if (menuName === "首页") {
+     if (menuName === "首页") {
         currentView.value = User_system_index_page;
     }
     if (menuName === "用户管理") {
